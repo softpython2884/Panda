@@ -29,11 +29,13 @@ export const ServiceSchema = z.object({
     "Domain must end with .panda, .pinou, or .pika"
   ),
   type: z.enum(serviceTypes, {
-    required_error: "Service type is required.",
+    // removed required_error from here
     errorMap: (issue, ctx) => {
       if (issue.code === 'invalid_enum_value') {
         return { message: 'Invalid service type. Please select from the list.' };
       }
+      // For other issues, including if the type is not provided (which might be an 'invalid_type' error),
+      // Zod's default message will be used.
       return { message: ctx.defaultError };
     },
   }),
