@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { verifyToken, type DecodedToken } from '@/lib/auth-edge'; // Updated import
+import { verifyToken, type DecodedToken } from '@/lib/auth-edge';
 
 const AUTH_COOKIE_NAME = 'panda_session_token';
 
@@ -17,21 +17,20 @@ export async function middleware(request: NextRequest) {
   let userId = null;
 
   if (tokenCookie?.value) {
-    const decoded = verifyToken<DecodedToken>(tokenCookie.value);
+    // verifyToken from auth-edge is now async
+    const decoded = await verifyToken<DecodedToken>(tokenCookie.value); 
     if (decoded) {
       userId = decoded.id;
     }
   }
 
   if (isProtectedPath && !userId) {
-    // Redirect to login if trying to access protected path without auth
     const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname); // Optional: add redirect query
+    loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   if (isAuthPath && userId) {
-    // Redirect to dashboard if trying to access login/register while already authed
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   

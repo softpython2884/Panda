@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { ServiceSchema } from '@/lib/schemas';
-import { getUserIdFromRequest, AuthenticatedUser, verifyToken } from '@/lib/auth';
+import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
     }
     const token = authHeader.substring(7);
-    const decodedUser = verifyToken<AuthenticatedUser>(token);
+    const decodedUser = await verifyToken<AuthenticatedUser>(token);
 
     if (!decodedUser || !decodedUser.id) {
       return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });
@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
     }
     console.error('Service registration error:', error);
-    // Check for SQLite unique constraint error (e.g., for domain)
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed: services.domain')) {
         return NextResponse.json({ error: 'Domain already registered' }, { status: 409 });
     }

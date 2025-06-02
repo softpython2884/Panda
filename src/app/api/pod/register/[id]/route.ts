@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { ServiceSchema } from '@/lib/schemas';
-import { getUserIdFromRequest, AuthenticatedUser, verifyToken } from '@/lib/auth';
+import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
 async function authorizeAndGetService(request: NextRequest, serviceId: string) {
@@ -11,7 +11,7 @@ async function authorizeAndGetService(request: NextRequest, serviceId: string) {
     return { error: 'Unauthorized: Missing or invalid token', status: 401, service: null, userId: null };
   }
   const token = authHeader.substring(7);
-  const decodedUser = verifyToken<AuthenticatedUser>(token);
+  const decodedUser = await verifyToken<AuthenticatedUser>(token);
 
   if (!decodedUser || !decodedUser.id) {
     return { error: 'Unauthorized: Invalid or expired token', status: 401, service: null, userId: null };
@@ -35,13 +35,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const serviceId = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error) {
+    if (authResult.error || !authResult.service || !authResult.userId) { // Ensure service and userId are present
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
     
     const body = await request.json();
-    // For PUT, allow partial updates, but we'll use the same schema and make fields optional on the client if needed.
-    // Or, create a PartialServiceSchema. For now, require all fields for simplicity on backend.
     const validationResult = ServiceSchema.safeParse(body);
 
     if (!validationResult.success) {
@@ -50,7 +48,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     
     const { name, description, local_url, public_url, domain, type } = validationResult.data;
 
-    // Check if domain is being changed and if the new domain is already taken by another service
     if (domain !== authResult.service.domain) {
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(domain, serviceId);
         if (existingDomain) {
@@ -81,7 +78,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const serviceId = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error) {
+    if (authResult.error || !authResult.userId) { // Ensure userId is present
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
@@ -97,8 +94,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const serviceId = params.id;
    try {
-    // Public GET for a specific service, or make it authenticated?
-    // For manager, it should be authenticated. Let's assume authenticated GET for now.
     const authResult = await authorizeAndGetService(request, serviceId);
     if (authResult.error) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });

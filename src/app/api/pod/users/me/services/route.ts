@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { getUserIdFromRequest, AuthenticatedUser, verifyToken } from '@/lib/auth';
+import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
     }
     const token = authHeader.substring(7);
-    const decodedUser = verifyToken<AuthenticatedUser>(token);
+    const decodedUser = await verifyToken<AuthenticatedUser>(token);
 
     if (!decodedUser || !decodedUser.id) {
       return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });

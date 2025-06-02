@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const decodedUser = verifyToken<AuthenticatedUser>(tokenCookie.value);
+  const decodedUser = await verifyToken<AuthenticatedUser>(tokenCookie.value);
 
   if (!decodedUser) {
     // Clear invalid cookie

@@ -1,10 +1,19 @@
 
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-key-for-development';
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'your-fallback-secret-key-for-development') {
+const JWT_SECRET_STRING = process.env.JWT_SECRET || 'your-fallback-secret-key-for-development';
+let JWT_SECRET_UINT8ARRAY: Uint8Array;
+
+function getSecret(): Uint8Array {
+  if (!JWT_SECRET_UINT8ARRAY) {
+    JWT_SECRET_UINT8ARRAY = new TextEncoder().encode(JWT_SECRET_STRING);
+  }
+  return JWT_SECRET_UINT8ARRAY;
+}
+
+if (process.env.NODE_ENV === 'production' && JWT_SECRET_STRING === 'your-fallback-secret-key-for-development') {
   console.warn('Warning: JWT_SECRET is not set in production environment. Using fallback secret.');
 }
 const SALT_ROUNDS = 10;
@@ -17,13 +26,21 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
-export function generateToken(payload: object, expiresIn: string = '1d'): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+export async function generateToken(payload: object, expiresIn: string = '1d'): Promise<string> {
+  const secret = getSecret();
+  const token = await new SignJWT(payload as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(secret);
+  return token;
 }
 
-export function verifyToken<T>(token: string): T | null {
+export async function verifyToken<T extends object>(token: string): Promise<T | null> {
   try {
-    return jwt.verify(token, JWT_SECRET) as T;
+    const secret = getSecret();
+    const { payload } = await jwtVerify(token, secret);
+    return payload as T;
   } catch (error) {
     return null;
   }
@@ -38,13 +55,13 @@ export async function getUserIdFromRequest(request: NextRequest): Promise<string
   const authHeader = request.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7); // Remove "Bearer "
-    const decoded = verifyToken<{ id: string }>(token);
+    const decoded = await verifyToken<{ id: string }>(token);
     return decoded?.id || null;
   }
   return null;
 }
 
-export function getJwtFromRequest(request: NextRequest): string | null {
+export async function getJwtFromRequest(request: NextRequest): Promise<string | null> {
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
         return authHeader.substring(7); // Remove "Bearer "
