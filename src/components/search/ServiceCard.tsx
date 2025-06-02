@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Globe, ExternalLink, Tag } from "lucide-react";
+import { Globe, ExternalLink, Tag, ArrowRight } from "lucide-react";
 
 interface Service {
   id: string;
@@ -17,6 +17,8 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service }: ServiceCardProps) {
+  const serviceDomainUrl = `http://${service.domain}`;
+
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col h-full">
       <CardHeader>
@@ -33,17 +35,19 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       <CardContent className="flex-grow">
         <p className="text-muted-foreground text-sm line-clamp-4">{service.description}</p>
       </CardContent>
-      <CardFooter className="border-t pt-4">
-        {service.public_url ? (
-          <Button asChild className="w-full bg-[#009fff] hover:bg-[#008ae6] text-white"> {/* PANDA Search Accent Blue */}
-            <a href={service.public_url} target="_blank" rel="noopener noreferrer">
-              Visit Service <ExternalLink className="ml-2 h-4 w-4" />
+      <CardFooter className="border-t pt-4 flex flex-col items-start gap-2">
+        <Button asChild className="w-full bg-[#009fff] hover:bg-[#008ae6] text-white">
+          <a href={serviceDomainUrl} target="_blank" rel="noopener noreferrer">
+            Access at {service.domain} <ArrowRight className="ml-2 h-4 w-4" />
+          </a>
+        </Button>
+        {service.public_url && (
+          <p className="text-xs text-muted-foreground w-full">
+            Public URL:{" "}
+            <a href={service.public_url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate inline-block max-w-full">
+              {service.public_url} <ExternalLink className="inline-block h-3 w-3 ml-1" />
             </a>
-          </Button>
-        ) : (
-          <Button variant="outline" disabled className="w-full">
-            No Public URL
-          </Button>
+          </p>
         )}
       </CardFooter>
     </Card>

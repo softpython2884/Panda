@@ -1,14 +1,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Search, LogIn, UserPlus } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, Search, LogIn, UserPlus, PawPrint } from "lucide-react";
 import Link from "next/link";
 
 export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-      <Image src="https://placehold.co/150x150.png" alt="PANDA Ecosystem Logo" width={120} height={120} className="mb-6 rounded-full" data-ai-hint="panda logo" />
+      <PawPrint className="h-24 w-24 mb-6 text-primary" />
       <h1 className="text-5xl font-headline font-bold mb-4 text-primary">
         Welcome to PANDA Ecosystem
       </h1>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, ShieldCheck } from 'lucide-react';
+import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint } from 'lucide-react';
 
 export default function AppNavbar() {
   const { user, logout, isLoading } = useAuth();
@@ -12,7 +12,7 @@ export default function AppNavbar() {
     <header className="bg-card border-b sticky top-0 z-50">
       <nav className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
-          <ShieldCheck className="h-7 w-7" />
+          <PawPrint className="h-7 w-7" />
           <h1 className="text-2xl font-headline font-bold">PANDA</h1>
         </Link>
         

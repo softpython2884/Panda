@@ -4,9 +4,8 @@ import SearchForm from "@/components/search/SearchForm";
 import ServiceCard from "@/components/search/ServiceCard";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Info, SearchCode } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Image from "next/image";
 
 interface Service {
   id: string;
@@ -27,11 +26,6 @@ export default function SearchPage() {
     setIsSearching(true);
     setHasSearched(true);
     try {
-      // NOTE: In a real app, ensure POD_API_URL is configured for client-side fetch if necessary,
-      // or this fetch should go to a BFF route that then calls the Pod.
-      // For simplicity, assuming Pod API is directly reachable or this is a server component action.
-      // Since this is client component, it must be a public endpoint or use BFF.
-      // The /api/pod/search is public.
       const response = await fetch(`/api/pod/search?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -68,7 +62,8 @@ export default function SearchPage() {
 
       {isSearching && (
         <div className="text-center py-10">
-          <p className="text-muted-foreground">Searching for services...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground mt-2">Searching for services...</p>
         </div>
       )}
 
@@ -91,8 +86,8 @@ export default function SearchPage() {
       )}
 
       {!isSearching && !hasSearched && (
-         <div className="text-center py-10">
-            <Image src="https://placehold.co/400x300.png?text=PANDA+Search" alt="PANDA Search placeholder" width={400} height={300} className="mx-auto mb-6 rounded-lg shadow-md" data-ai-hint="search illustration graph" />
+         <div className="text-center py-10 flex flex-col items-center">
+            <SearchCode className="h-32 w-32 text-muted-foreground mb-6" />
             <p className="text-xl text-muted-foreground font-poppins">Enter a query to start searching the PANDA Ecosystem.</p>
         </div>
       )}

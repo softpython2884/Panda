@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PlusCircle, Globe, Edit3, Trash2, ExternalLink, Server, Link2, Loader2, AlertTriangle } from "lucide-react";
+import { PlusCircle, Globe, Edit3, Trash2, ExternalLink, Server, Link2, Loader2, AlertTriangle, PackageSearch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -114,8 +114,8 @@ export default function DashboardPage() {
             <CardTitle className="font-headline text-2xl">No Services Yet</CardTitle>
             <CardDescription>You haven&apos;t registered any services. Get started by adding your first one!</CardDescription>
           </CardHeader>
-          <CardContent>
-             <Image src="https://placehold.co/300x200.png?text=No+Services" alt="No services placeholder" width={300} height={200} className="mx-auto mb-6 rounded-md" data-ai-hint="empty state illustration" />
+          <CardContent className="flex flex-col items-center">
+             <PackageSearch className="h-24 w-24 text-muted-foreground mb-6" />
             <Button asChild size="lg">
               <Link href="/dashboard/register-service">
                 <PlusCircle className="mr-2 h-5 w-5" /> Register Your First Service
