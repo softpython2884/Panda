@@ -4,7 +4,7 @@ import SearchForm from "@/components/search/SearchForm";
 import ServiceCard from "@/components/search/ServiceCard";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Info, SearchCode } from "lucide-react";
+import { AlertTriangle, Info, SearchCode, Loader2 } from "lucide-react"; // Added Loader2
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Service {

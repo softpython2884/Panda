@@ -15,22 +15,29 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ServiceSchema, type ServiceInput } from "@/lib/schemas";
+import { ServiceSchema, type ServiceInput, serviceTypes } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditServiceFormProps {
   serviceId: string;
-  initialData?: ServiceInput & { id: string }; // Optional initial data if pre-fetched
+  initialData?: ServiceInput & { id: string }; 
 }
 
 export default function EditServiceForm({ serviceId, initialData }: EditServiceFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(!initialData); // Fetch if no initial data
+  const [isFetching, setIsFetching] = useState(!initialData); 
 
   const form = useForm<ServiceInput>({
     resolver: zodResolver(ServiceSchema),
@@ -38,7 +45,7 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
       name: "",
       description: "",
       local_url: "http://localhost:",
-      public_url: "",
+      public_url: "", // Now mandatory
       domain: "",
       type: "website",
     },
@@ -53,14 +60,20 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
           return res.json();
         })
         .then(data => {
-          form.reset(data); // Populate form with fetched data
+          // Ensure the type from fetched data is one of the allowed enum values
+          const fetchedServiceType = serviceTypes.includes(data.type) ? data.type : "other";
+          form.reset({...data, type: fetchedServiceType }); 
           setIsFetching(false);
         })
         .catch(err => {
           toast({ title: "Error", description: err.message, variant: "destructive" });
           setIsFetching(false);
-          // router.push('/dashboard'); // Redirect if service can't be fetched
+          // router.push('/dashboard'); 
         });
+    } else {
+        // Ensure the type from initialData is one of the allowed enum values
+        const initialServiceType = serviceTypes.includes(initialData.type) ? initialData.type : "other";
+        form.reset({...initialData, type: initialServiceType});
     }
   }, [serviceId, initialData, form, toast, router]);
 
@@ -75,7 +88,7 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
       const data = await response.json();
       if (response.ok) {
         toast({ title: "Service Updated", description: `Service "${values.name}" updated successfully.` });
-        router.push("/dashboard"); // Or refresh current page
+        router.push("/dashboard"); 
       } else {
         toast({ title: "Update Failed", description: data.error || "Could not update service.", variant: "destructive" });
       }
@@ -145,11 +158,11 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
             name="public_url"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Public URL (Optional)</FormLabel>
+                <FormLabel>Tunnel/Public Access URL</FormLabel>
                 <FormControl>
                   <Input placeholder="https://your-tunnel.ngrok.io" {...field} />
                 </FormControl>
-                <FormDescription>The publicly accessible URL (e.g., from ngrok, playit).</FormDescription>
+                <FormDescription>The publicly accessible URL (e.g., from ngrok, playit.gg). This is required.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -176,9 +189,20 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Service Type</FormLabel>
-                <FormControl>
-                  <Input placeholder="website, api, game" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {serviceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormDescription>Category of your service.</FormDescription>
                 <FormMessage />
               </FormItem>

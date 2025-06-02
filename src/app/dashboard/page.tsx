@@ -25,7 +25,7 @@ interface Service {
   description: string;
   domain: string;
   type: string;
-  public_url?: string;
+  public_url: string; // Now mandatory
   local_url: string;
 }
 
@@ -135,7 +135,16 @@ export default function DashboardPage() {
                   <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{service.type}</span>
                 </div>
                 <CardDescription className="flex items-center gap-1 text-sm pt-1">
-                  <Globe className="h-4 w-4 text-primary" />{service.domain}
+                  <Globe className="h-4 w-4 text-primary" />
+                  <a 
+                    href={`http://${service.domain}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline hover:text-accent transition-colors"
+                    title={`Access ${service.domain}`}
+                  >
+                    {service.domain}
+                  </a>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -143,7 +152,7 @@ export default function DashboardPage() {
                 {service.public_url && (
                   <div className="text-sm flex items-center gap-1 mb-1">
                     <ExternalLink className="h-3 w-3 text-accent" />
-                    Public: <a href={service.public_url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate">{service.public_url}</a>
+                    Public/Tunnel: <a href={service.public_url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate">{service.public_url}</a>
                   </div>
                 )}
                 <div className="text-sm flex items-center gap-1">

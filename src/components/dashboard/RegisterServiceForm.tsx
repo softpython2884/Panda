@@ -15,11 +15,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ServiceSchema, type ServiceInput } from "@/lib/schemas";
+import { ServiceSchema, type ServiceInput, serviceTypes } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function RegisterServiceForm() {
   const router = useRouter();
@@ -32,9 +39,9 @@ export default function RegisterServiceForm() {
       name: "",
       description: "",
       local_url: "http://localhost:",
-      public_url: "",
+      public_url: "", // Now mandatory, user must fill this
       domain: "",
-      type: "website",
+      type: "website", // Default to 'website' from the enum
     },
   });
 
@@ -110,11 +117,11 @@ export default function RegisterServiceForm() {
             name="public_url"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Public URL (Optional)</FormLabel>
+                <FormLabel>Tunnel/Public Access URL</FormLabel>
                 <FormControl>
                   <Input placeholder="https://your-tunnel.ngrok.io" {...field} />
                 </FormControl>
-                <FormDescription>The publicly accessible URL (e.g., from ngrok, playit).</FormDescription>
+                <FormDescription>The publicly accessible URL (e.g., from ngrok, playit.gg). This is required.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -141,9 +148,20 @@ export default function RegisterServiceForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Service Type</FormLabel>
-                <FormControl>
-                  <Input placeholder="website, api, game" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {serviceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormDescription>Category of your service.</FormDescription>
                 <FormMessage />
               </FormItem>

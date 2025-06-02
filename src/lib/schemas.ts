@@ -17,17 +17,26 @@ export const UserLoginSchema = z.object({
   password: z.string(),
 });
 
+export const serviceTypes = ["website", "api", "game", "ia", "other"] as const;
+
 export const ServiceSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
   description: z.string().min(10, "Description must be at least 10 characters long"),
   local_url: z.string().url("Invalid local URL"),
-  public_url: z.string().url("Invalid public URL").optional().or(z.literal('')), // Optional and can be empty
+  public_url: z.string().url("A valid public/tunnel URL is required"), // Made mandatory
   domain: z.string().min(1, "Domain is required").refine(
     (domain) => /\.(panda|pinou|pika)$/.test(domain),
     "Domain must end with .panda, .pinou, or .pika"
   ),
-  type: z.string().min(1, "Type is required (e.g., website, api)"),
-  // token: z.string().uuid("Invalid service token format").optional(), // CLI might send this
+  type: z.enum(serviceTypes, {
+    required_error: "Service type is required.",
+    errorMap: (issue, ctx) => {
+      if (issue.code === 'invalid_enum_value') {
+        return { message: 'Invalid service type. Please select from the list.' };
+      }
+      return { message: ctx.defaultError };
+    },
+  }),
 });
 
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
