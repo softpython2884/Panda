@@ -41,15 +41,9 @@ export default function ServiceCard({ service }: ServiceCardProps) {
             Access at {service.domain} <ArrowRight className="ml-2 h-4 w-4" />
           </a>
         </Button>
-        {service.public_url && (
-          <p className="text-xs text-muted-foreground w-full">
-            Public URL:{" "}
-            <a href={service.public_url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate inline-block max-w-full">
-              {service.public_url} <ExternalLink className="inline-block h-3 w-3 ml-1" />
-            </a>
-          </p>
-        )}
+        {/* Public URL display removed as per request */}
       </CardFooter>
     </Card>
   );
 }
+

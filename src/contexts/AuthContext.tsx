@@ -12,7 +12,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
+  isCheckingAuthSession: boolean; // Renamed from isLoading
   login: (email: string, passsword: string) => Promise<boolean>;
   register: (email: string, passsword: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -23,11 +23,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingAuthSession, setIsCheckingAuthSession] = useState(true); // Tracks initial session check
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    setIsLoading(true);
+    setIsCheckingAuthSession(true);
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
@@ -40,7 +40,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to fetch user", error);
       setUser(null);
     } finally {
-      setIsLoading(false);
+      setIsCheckingAuthSession(false);
     }
   }, []);
 
@@ -49,7 +49,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchUser]);
 
   const login = async (email: string, passwordInput: string) => {
-    setIsLoading(true);
+    // This function's own loading state for UI elements (like buttons)
+    // should be handled locally in the component calling it.
+    // It directly sets the user state upon success.
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -60,22 +62,18 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         setUser(data.user);
         toast({ title: "Login Successful", description: `Welcome back, ${data.user.email}!` });
-        setIsLoading(false);
         return true;
       } else {
         toast({ title: "Login Failed", description: data.error || "Invalid credentials", variant: "destructive" });
-        setIsLoading(false);
         return false;
       }
     } catch (error) {
       toast({ title: "Login Error", description: "An unexpected error occurred.", variant: "destructive" });
-      setIsLoading(false);
       return false;
     }
   };
 
   const register = async (email: string, passwordInput: string) => {
-    setIsLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -84,39 +82,32 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       if (res.ok) {
-        // Optionally log in user directly after registration
-        // For now, just show success and let them log in.
-        toast({ title: "Registration Successful", description: "You can now log in." });
-        setIsLoading(false);
+        // Do not show "You can now log in" here, as we will attempt auto-login.
+        // The login function will show its own success/failure toasts.
         return true;
       } else {
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
-        setIsLoading(false);
         return false;
       }
     } catch (error) {
       toast({ title: "Registration Error", description: "An unexpected error occurred.", variant: "destructive" });
-      setIsLoading(false);
       return false;
     }
   };
 
   const logout = async () => {
-    setIsLoading(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
+      setUser(null); // Clear user state
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
        toast({ title: "Logout Error", description: "Failed to log out.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
     }
   };
 
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, fetchUser }}>
+    <AuthContext.Provider value={{ user, isCheckingAuthSession, login, register, logout, fetchUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -129,4 +120,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

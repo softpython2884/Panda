@@ -3,7 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod"; // Added this line
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,15 +14,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UserRegistrationSchema, type UserRegistrationInput } from "@/lib/schemas";
+import { UserRegistrationSchema } from "@/lib/schemas"; // Removed UserRegistrationInput type import as it's inferred
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RegisterForm() {
-  const { register } = useAuth();
+  const { register, login } = useAuth(); // Added login from useAuth
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -31,7 +33,7 @@ export default function RegisterForm() {
     confirmPassword: z.string().min(1, "Please confirm your password"),
   }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"], // path to field that gets the error
+    path: ["confirmPassword"],
   });
 
   type RegisterFormInput = z.infer<typeof formSchema>;
@@ -47,10 +49,20 @@ export default function RegisterForm() {
 
   async function onSubmit(values: RegisterFormInput) {
     setIsLoading(true);
-    const success = await register(values.email, values.password);
-    if (success) {
-      router.push("/auth/login"); // Redirect to login after successful registration
+    const registrationSuccess = await register(values.email, values.password);
+    if (registrationSuccess) {
+      toast({ title: "Registration Successful", description: "Attempting to log you in..." });
+      const loginSuccess = await login(values.email, values.password);
+      if (loginSuccess) {
+        // Login toast is handled by AuthContext.login
+        router.push("/dashboard");
+      } else {
+        // Login failure toast is handled by AuthContext.login
+        toast({ title: "Auto-Login Failed", description: "Please try logging in manually.", variant: "destructive" });
+        router.push("/auth/login"); // Redirect to login if auto-login fails
+      }
     }
+    // If registration failed, toast is handled by AuthContext.register
     setIsLoading(false);
   }
 

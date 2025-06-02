@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint } from 'lucide-react';
 
 export default function AppNavbar() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isCheckingAuthSession } = useAuth(); // Use isCheckingAuthSession
 
   return (
     <header className="bg-card border-b sticky top-0 z-50">
@@ -23,7 +23,7 @@ export default function AppNavbar() {
             </Link>
           </Button>
 
-          {isLoading ? (
+          {isCheckingAuthSession ? ( // Use isCheckingAuthSession for the loading state
             <Button variant="ghost" size="sm" disabled>Loading...</Button>
           ) : user ? (
             <>
