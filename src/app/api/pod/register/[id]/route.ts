@@ -5,6 +5,8 @@ import { ServiceSchema } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
+const PANDA_TUNNEL_MAIN_HOST = process.env.PANDA_TUNNEL_MAIN_HOST;
+
 async function authorizeAndGetService(request: NextRequest, serviceId: string) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -35,7 +37,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const serviceId = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error || !authResult.service || !authResult.userId) { // Ensure service and userId are present
+    if (authResult.error || !authResult.service || !authResult.userId) { 
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
     
@@ -46,7 +48,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
     }
     
-    const { name, description, local_url, public_url, domain, type } = validationResult.data;
+    const { name, description, local_url, domain, type } = validationResult.data;
+    let public_url_to_store = validationResult.data.public_url; // User input
+
+    if (PANDA_TUNNEL_MAIN_HOST && domain) {
+      const derived_public_url = `http://${domain}.${PANDA_TUNNEL_MAIN_HOST}`;
+      try {
+        new URL(derived_public_url); // Validate structure
+        public_url_to_store = derived_public_url;
+      } catch (e) {
+        console.error(`Invalid constructed tunnel URL for update: ${derived_public_url}`, e);
+        if (!public_url_to_store) {
+             return NextResponse.json({ error: 'Failed to determine public URL for the service update.' }, { status: 500 });
+        }
+      }
+    }
+
+    if (!public_url_to_store) {
+        return NextResponse.json({ error: 'Public URL is required and could not be determined for update.' }, { status: 400 });
+    }
 
     if (domain !== authResult.service.domain) {
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(domain, serviceId);
@@ -57,7 +77,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     db.prepare(
       'UPDATE services SET name = ?, description = ?, local_url = ?, public_url = ?, domain = ?, type = ? WHERE id = ? AND user_id = ?'
-    ).run(name, description, local_url, public_url || null, domain, type, serviceId, authResult.userId);
+    ).run(name, description, local_url, public_url_to_store, domain, type, serviceId, authResult.userId);
     
     const updatedService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
     return NextResponse.json({ message: 'Service updated successfully', service: updatedService });
@@ -78,7 +98,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const serviceId = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error || !authResult.userId) { // Ensure userId is present
+    if (authResult.error || !authResult.userId) { 
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 

@@ -45,7 +45,7 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
       name: "",
       description: "",
       local_url: "http://localhost:",
-      public_url: "", // Now mandatory
+      public_url: "", 
       domain: "",
       type: "website",
     },
@@ -60,7 +60,6 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
           return res.json();
         })
         .then(data => {
-          // Ensure the type from fetched data is one of the allowed enum values
           const fetchedServiceType = serviceTypes.includes(data.type) ? data.type : "other";
           form.reset({...data, type: fetchedServiceType }); 
           setIsFetching(false);
@@ -68,10 +67,8 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
         .catch(err => {
           toast({ title: "Error", description: err.message, variant: "destructive" });
           setIsFetching(false);
-          // router.push('/dashboard'); 
         });
     } else {
-        // Ensure the type from initialData is one of the allowed enum values
         const initialServiceType = serviceTypes.includes(initialData.type) ? initialData.type : "other";
         form.reset({...initialData, type: initialServiceType});
     }
@@ -148,7 +145,7 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
                 <FormControl>
                   <Input placeholder="http://localhost:3000" {...field} />
                 </FormControl>
-                <FormDescription>The URL where your service runs locally.</FormDescription>
+                <FormDescription>The URL where your service runs locally (e.g., `http://localhost:3000`).</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -162,7 +159,10 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
                 <FormControl>
                   <Input placeholder="https://your-tunnel.ngrok.io" {...field} />
                 </FormControl>
-                <FormDescription>The publicly accessible URL (e.g., from ngrok, playit.gg). This is required.</FormDescription>
+                <FormDescription>
+                  If the PANDA Tunnel System is configured by the admin, this URL will be auto-generated (e.g., `yourdomain.panda.customhost.com`). 
+                  Otherwise, provide your ngrok/playit.gg URL here. This field is required.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -174,11 +174,11 @@ export default function EditServiceForm({ serviceId, initialData }: EditServiceF
             name="domain"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Domain Name</FormLabel>
+                <FormLabel>PANDA Domain</FormLabel>
                 <FormControl>
                   <Input placeholder="myapp.panda" {...field} />
                 </FormControl>
-                <FormDescription>Must end in .panda, .pinou, or .pika.</FormDescription>
+                <FormDescription>Your unique service domain (e.g., `myapp.panda`). Must end in .panda, .pinou, or .pika.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
