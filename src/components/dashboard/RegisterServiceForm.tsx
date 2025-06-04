@@ -34,23 +34,29 @@ export default function RegisterServiceForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FrpServiceInput>({
-    resolver: zodResolver(ServiceSchema), // ServiceSchema is now FrpServiceSchema
+    resolver: zodResolver(ServiceSchema),
     defaultValues: {
       name: "",
       description: "",
-      localPort: undefined, // Default to undefined so placeholder shows
+      localPort: '' as any, // Initialize with empty string for controlled input, will be parsed to number
       subdomain: "",
-      frpType: "http", 
+      frpType: "http",
     },
   });
 
   async function onSubmit(values: FrpServiceInput) {
     setIsLoading(true);
     try {
+      // Ensure localPort is a number before sending
+      const payload = {
+        ...values,
+        localPort: Number(values.localPort),
+      };
+
       const response = await fetch('/api/dashboard/services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (response.ok) {
@@ -108,11 +114,14 @@ export default function RegisterServiceForm() {
               <FormItem>
                 <FormLabel>Local Port</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="e.g., 3000 or 25565" 
-                    {...field} 
-                    onChange={event => field.onChange(+event.target.value)} // Ensure value is number
+                  <Input
+                    type="number"
+                    placeholder="e.g., 3000 or 25565"
+                    {...field}
+                    // onChange in Zod schema handles parsing to number
+                    // Value should be string for controlled input if it can be empty, or number if always number
+                    value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                    onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
                 <FormDescription>The port your service runs on locally (e.g., `80`, `3000`, `25565`).</FormDescription>
@@ -140,7 +149,7 @@ export default function RegisterServiceForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Protocol of your local service.</FormDescription>
+                <FormDescription>Protocol of your local service. For Minecraft, use TCP and port 25565.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -157,13 +166,13 @@ export default function RegisterServiceForm() {
                 </FormControl>
                 <FormDescription>
                   Your service will be accessible at <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
-                  Use lowercase letters, numbers, and hyphens.
+                  Use lowercase letters, numbers, and hyphens. This is used for HTTP/HTTPS and informative for other types.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-        
+
         <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Settings2 className="mr-2 h-4 w-4" />
