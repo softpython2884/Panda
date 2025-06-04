@@ -17,7 +17,20 @@ export async function GET(request: NextRequest) {
     }
     const userId = decodedUser.id;
 
-    const services = db.prepare('SELECT * FROM services WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get('limit');
+    let query = 'SELECT * FROM services WHERE user_id = ? ORDER BY created_at DESC';
+    const queryParams: any[] = [userId];
+
+    if (limitParam) {
+      const limit = parseInt(limitParam, 10);
+      if (!isNaN(limit) && limit > 0) {
+        query += ' LIMIT ?';
+        queryParams.push(limit);
+      }
+    }
+
+    const services = db.prepare(query).all(...queryParams);
     return NextResponse.json(services);
     
   } catch (error) {

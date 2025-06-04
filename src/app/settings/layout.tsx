@@ -4,18 +4,19 @@ import type { ReactNode } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Loader2, UserCircle, ShieldCheck, Palette, Server, Cloud } from "lucide-react";
+import { Loader2, UserCircle, Link as LinkIcon, Palette, Server, Cloud, ShieldCheck, LayoutDashboard } from "lucide-react"; // Added LayoutDashboard, LinkIcon
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const sidebarNavItems = [
-  { title: "Profile", href: "/settings/profile", icon: UserCircle },
-  { title: "Tunnels", href: "/dashboard", icon: Server }, // Link to existing dashboard
+  { title: "Mon Profil", href: "/settings/profile", icon: UserCircle },
+  { title: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard }, // Link to main dashboard
   // Future items:
-  // { title: "Cloud Storage", href: "/settings/cloud", icon: Cloud },
-  // { title: "Security", href: "/settings/security", icon: ShieldCheck },
-  // { title: "Appearance", href: "/settings/appearance", icon: Palette },
+  // { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Server }, // More specific link
+  // { title: "Mon Cloud", href: "/dashboard/cloud", icon: Cloud },
+  // { title: "Sécurité", href: "/settings/security", icon: ShieldCheck },
+  // { title: "Apparence", href: "/settings/appearance", icon: Palette },
 ];
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
@@ -29,7 +30,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
     }
   }, [user, isCheckingAuthSession, router]);
 
-  if (isCheckingAuthSession || (!user && isCheckingAuthSession)) {
+  if (isCheckingAuthSession || (!user && isCheckingAuthSession && typeof window !== 'undefined')) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -51,15 +52,15 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
     <div className="flex flex-col md:flex-row gap-8 min-h-[calc(100vh-var(--navbar-height,100px)-2rem)]">
       <aside className="md:w-64 lg:w-72 xl:w-80 flex-shrink-0">
         <div className="sticky top-24 space-y-4"> {/* top value approx navbar height + some padding */}
-          <h2 className="text-xl font-headline font-semibold px-4">Settings</h2>
+          <h2 className="text-xl font-headline font-semibold px-4">Paramètres</h2>
           <nav className="flex flex-col gap-1 px-2">
             {sidebarNavItems.map((item) => (
               <Button
                 key={item.title}
-                variant={pathname === item.href ? "default" : "ghost"}
+                variant={pathname.startsWith(item.href) ? "default" : "ghost"} // Use startsWith for active state
                 className={cn(
                   "w-full justify-start",
-                  pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                 )}
                 asChild
               >

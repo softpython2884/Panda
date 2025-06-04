@@ -23,9 +23,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Mail } from "lucide-react";
 
 export default function UserProfileForm() {
-  const { user, fetchUser } = useAuth();
+  const { user, fetchUser, isCheckingAuthSession } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  // isFetchingProfile will be true if isCheckingAuthSession is true OR if user is not yet populated
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
 
   const form = useForm<UserProfileUpdateInput>({
@@ -38,28 +39,34 @@ export default function UserProfileForm() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (!isCheckingAuthSession && user) {
       form.reset({
         username: user.username || "",
         firstName: user.firstName || "",
         lastName: user.lastName || "",
       });
       setIsFetchingProfile(false);
-    } else {
-        // If user is null but auth check is done, it might mean an error or logged out.
-        // Fetch user can be called again if needed, or rely on AuthProvider's initial fetch.
-        setIsFetchingProfile(true); // Keep loading until user context is populated
-        fetchUser().finally(() => setIsFetchingProfile(false));
+    } else if (!isCheckingAuthSession && !user) {
+      // Auth check is done, but no user (e.g., not logged in or error fetching)
+      setIsFetchingProfile(false);
     }
-  }, [user, form, fetchUser]);
+    // If isCheckingAuthSession is true, isFetchingProfile remains true
+  }, [user, form, isCheckingAuthSession]);
+
 
   async function onSubmit(values: UserProfileUpdateInput) {
     setIsLoading(true);
     try {
       const payload: Partial<UserProfileUpdateInput> = {};
       if (values.username && values.username !== user?.username) payload.username = values.username;
-      if (values.firstName !== user?.firstName) payload.firstName = values.firstName || null; // Send null if empty
-      if (values.lastName !== user?.lastName) payload.lastName = values.lastName || null;   // Send null if empty
+      // Send empty strings as null for optional fields
+      payload.firstName = values.firstName === "" ? null : values.firstName;
+      payload.lastName = values.lastName === "" ? null : values.lastName;
+      
+      // Ensure we only send fields that actually changed or are being set
+      if (payload.firstName === user?.firstName) delete payload.firstName;
+      if (payload.lastName === user?.lastName) delete payload.lastName;
+
 
       if (Object.keys(payload).length === 0) {
         toast({ title: "No Changes", description: "You haven't made any changes to your profile." });
@@ -87,8 +94,9 @@ export default function UserProfileForm() {
       setIsLoading(false);
     }
   }
-
-  if (isFetchingProfile) {
+  
+  // Display loader if either the auth session is being checked OR if form data hasn't been reset yet
+  if (isCheckingAuthSession || isFetchingProfile) {
     return (
       <div className="flex items-center justify-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
@@ -97,12 +105,12 @@ export default function UserProfileForm() {
     );
   }
   
-  if (!user) {
+  if (!user) { // Auth check done, but no user
     return (
          <Alert variant="destructive">
             <Mail className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>Could not load user profile. Please try logging out and back in.</AlertDescription>
+            <AlertDescription>Could not load user profile. Please ensure you are logged in.</AlertDescription>
         </Alert>
     );
   }

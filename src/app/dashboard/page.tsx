@@ -1,195 +1,137 @@
 
 "use client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Waypoints, Cloud, Activity, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PlusCircle, Globe, Edit3, Trash2, ExternalLink, Server, Link2, Loader2, AlertTriangle, PackageSearch, DownloadCloud } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { FRP_SERVER_BASE_DOMAIN } from "@/lib/schemas";
 
-interface Service {
+// TODO: Define a more specific type for recent services if needed
+interface RecentService {
   id: string;
   name: string;
-  description: string;
-  domain: string; // For frp, this is the subdomain part
-  type: string; // For frp, this is 'http', 'tcp', etc. (frpType)
-  public_url: string; // Generated frp public URL: {subdomain}.{FRP_SERVER_BASE_DOMAIN}
-  local_port?: number; // frp local port
-  local_url?: string; // Legacy or informational "127.0.0.1:PORT"
-  // frp_type could also be here if differentiated in DB, but we use 'type'
+  type: string; 
+  public_url: string;
 }
 
-export default function DashboardPage() {
+export default function DashboardOverviewPage() {
   const { user } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [recentTunnels, setRecentTunnels] = useState<RecentService[]>([]);
+  const [isLoadingTunnels, setIsLoadingTunnels] = useState(false); // Add loading state
 
   useEffect(() => {
-    async function fetchServices() {
+    async function fetchRecentTunnels() {
       if (!user) return;
-      setIsLoading(true);
-      setError(null);
+      setIsLoadingTunnels(true);
       try {
-        const response = await fetch('/api/dashboard/services');
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch services');
+        // TODO: Modify API to support ?limit=3 or similar
+        const response = await fetch('/api/dashboard/services'); // For now, fetches all
+        if (response.ok) {
+          const data = await response.json();
+          setRecentTunnels(data.slice(0, 3)); // Manually slice for now
+        } else {
+          console.error("Failed to fetch recent tunnels");
         }
-        const data = await response.json();
-        setServices(data);
-      } catch (err: any) {
-        setError(err.message);
-        toast({ title: "Error", description: err.message, variant: "destructive" });
+      } catch (error) {
+        console.error("Error fetching recent tunnels:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingTunnels(false);
       }
     }
-    fetchServices();
-  }, [user, toast]);
+    fetchRecentTunnels();
+  }, [user]);
 
-  const handleDeleteService = async (serviceId: string) => {
-    try {
-      const response = await fetch(`/api/manager/service/${serviceId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete service');
-      }
-      setServices(prevServices => prevServices.filter(s => s.id !== serviceId));
-      toast({ title: "Success", description: "Service deleted successfully." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
+  const capitalizeFirstLetter = (string?: string) => {
+    if (!string) return "";
+    return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-300px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Loading your services...</p>
-      </div>
-    );
-  }
+  const displayName = user ? capitalizeFirstLetter(user.username) || capitalizeFirstLetter(user.email) : "";
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-headline font-bold">My Tunnel Services</h1>
-        <Button asChild>
-          <Link href="/dashboard/register-service">
-            <PlusCircle className="mr-2 h-5 w-5" /> Register New Tunnel
-          </Link>
-        </Button>
-      </div>
+    <div className="space-y-10">
+      <section>
+        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+            Bonjour, {displayName}!
+          </span>
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          Bienvenue sur votre tableau de bord PANDA. Gérez vos services et explorez l'écosystème.
+        </p>
+      </section>
 
-      {error && (
-        <Card className="bg-destructive/10 border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2"><AlertTriangle />Error Fetching Services</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{error}</p>
-            <Button onClick={() => window.location.reload()} variant="destructive" className="mt-4">Try Again</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {!error && services.length === 0 && (
-        <Card className="text-center py-12">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">No Tunnel Services Yet</CardTitle>
-            <CardDescription>You haven&apos;t registered any PANDA Tunnels. Get started by adding your first one!</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center">
-             <PackageSearch className="h-24 w-24 text-muted-foreground mb-6" />
-            <Button asChild size="lg">
-              <Link href="/dashboard/register-service">
-                <PlusCircle className="mr-2 h-5 w-5" /> Register Your First Tunnel
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {!error && services.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <Card key={service.id} className="flex flex-col shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="font-headline text-xl">{service.name}</CardTitle>
-                  <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full uppercase">{service.type}</span>
+      <section className="space-y-6">
+        <h2 className="text-3xl font-headline font-semibold flex items-center gap-2">
+          <Activity className="h-7 w-7 text-primary" />
+          Mes Projets Actifs
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <CardTitle className="font-headline text-xl flex items-center gap-2">
+                <Waypoints className="text-primary" />
+                Mes Derniers Tunnels
+              </CardTitle>
+              <CardDescription>Accédez rapidement à vos services tunnelisés les plus récents.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isLoadingTunnels && (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p className="ml-2 text-muted-foreground">Chargement des tunnels...</p>
                 </div>
-                 {/* 'domain' in DB is the frp subdomain. public_url is the full URL */}
-                <CardDescription className="flex items-center gap-1 text-sm pt-1">
-                  <Globe className="h-4 w-4 text-primary" />
-                  <a 
-                    href={service.public_url} // This is now the full frp URL
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline hover:text-accent transition-colors truncate"
-                    title={`Access ${service.public_url}`}
-                  >
-                    {service.public_url}
-                  </a>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground text-sm mb-3 line-clamp-3">{service.description}</p>
-                <div className="text-sm flex items-center gap-1">
-                  <Server className="h-3 w-3 text-muted-foreground" />
-                  Local Port: <span className="text-muted-foreground">{service.local_port || 'N/A'}</span>
+              )}
+              {!isLoadingTunnels && recentTunnels.length === 0 && (
+                <p className="text-muted-foreground text-sm">Aucun service tunnel trouvé pour le moment.</p>
+              )}
+              {!isLoadingTunnels && recentTunnels.map(tunnel => (
+                <div key={tunnel.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
+                  <div>
+                    <p className="font-semibold text-sm">{tunnel.name}</p>
+                    <p className="text-xs text-muted-foreground">{tunnel.public_url}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/manager/service/${tunnel.id}`}>
+                      Gérer <ArrowRight className="ml-1 h-3 w-3" />
+                    </Link>
+                  </Button>
                 </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" size="sm" asChild className="flex-1 w-full sm:w-auto">
-                  <Link href={`/manager/service/${service.id}`}><Edit3 className="h-4 w-4 mr-1" /> Edit</Link>
-                </Button>
-                 <Button variant="secondary" size="sm" asChild className="flex-1 w-full sm:w-auto">
-                  <Link href={`/dashboard/service/${service.id}/client-config`}><DownloadCloud className="h-4 w-4 mr-1" /> Get Config</Link>
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="flex-1 w-full sm:w-auto"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your tunnel service
-                        &quot;{service.name}&quot; and remove its data from our servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDeleteService(service.id)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
-            </Card>
-          ))}
+              ))}
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href="/dashboard/tunnels">Voir tous mes Tunnels <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="shadow-lg hover:shadow-xl transition-shadow opacity-70">
+            <CardHeader>
+              <CardTitle className="font-headline text-xl flex items-center gap-2">
+                <Cloud className="text-accent" />
+                Mon Espace Cloud
+              </CardTitle>
+              <CardDescription>Gérez vos fichiers et partages (Bientôt disponible!).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                L'intégration du stockage cloud est en cours de développement. Revenez bientôt pour découvrir cette fonctionnalité !
+              </p>
+              {/* Placeholder pour "derniers serveurs cloud utilisés" */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-md text-center">
+                <p className="text-sm text-muted-foreground italic">Aperçu des activités cloud à venir...</p>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full" disabled>
+                <Link href="/dashboard/cloud">Accéder à mon Cloud <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
-      )}
+      </section>
     </div>
   );
 }
