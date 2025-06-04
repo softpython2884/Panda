@@ -92,32 +92,45 @@ function initializeSchema() {
 
   if (schemaVersion < 4) {
     try {
-      db.exec('ALTER TABLE users ADD COLUMN username TEXT UNIQUE;'); // Will be made NOT NULL later if all existing users have one
+      // Step 1: Add columns without UNIQUE constraint on username initially
+      db.exec('ALTER TABLE users ADD COLUMN username TEXT;');
       db.exec('ALTER TABLE users ADD COLUMN firstName TEXT;');
       db.exec('ALTER TABLE users ADD COLUMN lastName TEXT;');
-      console.log("Added username, firstName, lastName columns to users table (migration step for v4).");
-      // If you want username to be NOT NULL and you have existing users,
-      // you would first add the column as NULLABLE, populate it for existing users,
-      // then alter it to NOT NULL. For a fresh setup, you can add it as NOT NULL directly.
-      // For now, let's assume we might need to update existing users or handle nulls initially.
-      // A better approach for existing data:
-      // 1. ADD COLUMN username TEXT UNIQUE;
-      // 2. UPDATE users SET username = email WHERE username IS NULL; (or some other default)
-      // 3. (If using SQLite version that supports it, or recreate table) ALTER TABLE users ALTER COLUMN username SET NOT NULL;
-      // For simplicity now, username is UNIQUE but can be NULL. Registration will enforce it.
+      console.log("Added username (nullable), firstName, lastName columns to users table.");
+
+      // Step 2: Populate username for existing users (if any, and if username is NULL)
+      // Using email as a fallback. Ensure this logic aligns with your desired uniqueness.
+      // Since email is already UNIQUE, this should provide unique usernames for existing users without one.
+      const stmt = db.prepare('UPDATE users SET username = email WHERE username IS NULL');
+      stmt.run();
+      console.log("Attempted to populate username for existing users using their email as a fallback.");
+
+      // Step 3: Create a UNIQUE index on the username column
+      // IF NOT EXISTS is good practice in case migration runs multiple times due to partial failure
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);');
+      console.log("Created UNIQUE index on username column.");
+      
+      console.log("Database schema upgraded to version 4 for user profiles (username, firstName, lastName added).");
     } catch (e) {
-        if (e instanceof Error && (
-            e.message.includes('duplicate column name: username') ||
-            e.message.includes('duplicate column name: firstName') ||
-            e.message.includes('duplicate column name: lastName')
-        )) {
-             console.warn("One or more columns (username, firstName, lastName) already exist on users table (v4 migration).");
+        // Catch specific errors if needed, e.g., if CREATE UNIQUE INDEX fails due to actual duplicates after update
+        if (e instanceof Error) {
+            if (e.message.includes('duplicate column name')) {
+                 console.warn("One or more columns (username, firstName, lastName) might already exist on users table (v4 migration partial run?).");
+            } else if (e.message.includes('UNIQUE constraint failed') && e.message.includes('idx_users_username')) {
+                console.error("Failed to create UNIQUE index on username. This means there are duplicate usernames after the update attempt. Manual intervention might be needed.", e);
+            } else {
+                 console.error("Error during v4 schema migration:", e);
+            }
         } else {
-            throw e;
+            console.error("Unknown error during v4 schema migration:", e);
+        }
+        // Do not re-throw if it's just a "duplicate column" warning from a partial run,
+        // but do re-throw for critical errors like failing to create a unique index due to data issues.
+        if (e instanceof Error && !(e.message.includes('duplicate column name'))) {
+            throw e; // Re-throw critical errors
         }
     }
     db.pragma('user_version = 4');
-    console.log("Database schema upgraded to version 4 for user profiles.");
     schemaVersion = 4;
   }
 }
