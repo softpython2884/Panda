@@ -3,11 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyToken, type AuthenticatedUser } from '@/lib/auth';
 
-// This Pod route is called by the BFF (/api/auth/me) after it verifies the token.
-// It expects the BFF to pass the authenticated user's ID or ensure the request is authenticated.
-// For simplicity, we'll re-verify the token here if needed, or trust the BFF's prior verification
-// if the BFF passes the user ID securely.
-
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -23,19 +18,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const user = db.prepare(
-      'SELECT id, email, username, firstName, lastName FROM users WHERE id = ?'
-    ).get(userId) as { id: string; email: string; username: string | null; firstName: string | null; lastName: string | null } | undefined;
+      'SELECT id, email, username, firstName, lastName, role FROM users WHERE id = ?'
+    ).get(userId) as { id: string; email: string; username: string | null; firstName: string | null; lastName: string | null, role: AuthenticatedUser['role'] } | undefined;
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-    // Ensure username is not null, or provide a default if necessary for the User interface
     const userProfile = {
         ...user,
-        username: user.username || undefined, // Convert null to undefined if User interface expects optional string
+        username: user.username || undefined, 
         firstName: user.firstName || null,
         lastName: user.lastName || null,
+        role: user.role || 'FREE', // Default to FREE if somehow null in DB
     };
 
     return NextResponse.json({ user: userProfile });

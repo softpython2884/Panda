@@ -22,7 +22,6 @@ export const UserProfileUpdateSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters long.").max(30, "Username must be 30 characters or less.").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores.").optional(),
     firstName: z.string().max(50, "First name must be 50 characters or less.").optional().nullable(),
     lastName: z.string().max(50, "Last name must be 50 characters or less.").optional().nullable(),
-    // Email update would require verification, so it's handled separately or not at all for now.
 });
 
 
@@ -40,6 +39,9 @@ export const FRP_SERVER_BASE_DOMAIN = (envFrpBaseDomain && envFrpBaseDomain.trim
 
 const envPandaTunnelMainHost = process.env.PANDA_TUNNEL_MAIN_HOST;
 export const PANDA_TUNNEL_MAIN_HOST = (envPandaTunnelMainHost && envPandaTunnelMainHost.trim() !== "") ? envPandaTunnelMainHost.trim() : undefined;
+
+const envPandaAdminEmail = process.env.PANDA_ADMIN_EMAIL;
+export const PANDA_ADMIN_EMAIL = (envPandaAdminEmail && envPandaAdminEmail.trim() !== "") ? envPandaAdminEmail.trim() : undefined;
 
 
 export const frpServiceTypes = ["http", "https", "tcp", "udp", "stcp", "xtcp"] as const;
@@ -79,25 +81,6 @@ export const FrpServiceSchema = z.object({
   }
 });
 
-export const LegacyServiceSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters long"),
-  description: z.string().min(10, "Description must be at least 10 characters long"),
-  local_url: z.string().url("Invalid local URL (e.g. http://localhost:3000)"),
-  public_url: z.string().url("A valid public/tunnel URL is required (e.g. from ngrok or playit.gg)"),
-  domain: z.string().min(1, "Domain is required for legacy services").refine(
-    (domain) => /\.(panda|pinou|pika)$/.test(domain),
-    "Domain must end with .panda, .pinou, or .pika"
-  ),
-  type: z.enum(["website", "api", "game", "ia", "other"], {
-    errorMap: (issue, ctx) => {
-      if (issue.code === 'invalid_enum_value') {
-        return { message: 'Invalid service type. Please select from the list.' };
-      }
-      return { message: ctx.defaultError };
-    },
-  }),
-});
-
 export const ServiceSchema = FrpServiceSchema;
 
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
@@ -105,4 +88,52 @@ export type UserLoginInput = z.infer<typeof UserLoginSchema>;
 export type UserProfileUpdateInput = z.infer<typeof UserProfileUpdateSchema>;
 export type FrpServiceInput = z.infer<typeof FrpServiceSchema>;
 export type ServiceInput = FrpServiceInput;
-export type LegacyServiceInput = z.infer<typeof LegacyServiceSchema>;
+
+
+export const UserRoleSchema = z.enum(['FREE', 'PREMIUM', 'PREMIUM_PLUS', 'ENDIUM', 'ADMIN']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const API_TOKEN_SCOPES = ["service:read", "service:write", "profile:read"] as const; // Example scopes
+export type ApiTokenScope = typeof API_TOKEN_SCOPES[number];
+
+export const ApiTokenCreateSchema = z.object({
+    name: z.string().min(3, "Token name must be at least 3 characters").max(50, "Token name too long"),
+    // scopes: z.array(z.enum(API_TOKEN_SCOPES)).min(1, "At least one scope is required"), // For simplicity, start without scopes
+    expiresAt: z.date().optional().nullable(),
+});
+export type ApiTokenCreateInput = z.infer<typeof ApiTokenCreateSchema>;
+
+export const ApiTokenDisplaySchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    tokenPrefix: z.string(),
+    // scopes: z.array(z.string()),
+    lastUsedAt: z.string().nullable(), // Store as ISO string from Date
+    expiresAt: z.string().nullable(), // Store as ISO string from Date
+    createdAt: z.string(), // Store as ISO string from Date
+});
+export type ApiTokenDisplay = z.infer<typeof ApiTokenDisplaySchema>;
+
+
+export const RolesConfig = {
+  FREE: {
+    maxTunnels: 3,
+    canCreateApiTokens: false,
+  },
+  PREMIUM: {
+    maxTunnels: 10,
+    canCreateApiTokens: true,
+  },
+  PREMIUM_PLUS: {
+    maxTunnels: 25,
+    canCreateApiTokens: true,
+  },
+  ENDIUM: {
+    maxTunnels: 100,
+    canCreateApiTokens: true,
+  },
+  ADMIN: {
+    maxTunnels: Infinity,
+    canCreateApiTokens: true,
+  }
+} as const;

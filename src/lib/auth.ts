@@ -2,6 +2,8 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
+import crypto from 'crypto'; // For generating API token string
+import type { UserRole } from './schemas';
 
 const JWT_SECRET_STRING = process.env.JWT_SECRET || 'your-fallback-secret-key-for-development';
 let JWT_SECRET_UINT8ARRAY: Uint8Array;
@@ -49,16 +51,26 @@ export async function verifyToken<T extends object>(token: string): Promise<T | 
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  role: UserRole;
 }
 
 export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
   const token = await getJwtFromRequest(request);
   if (token) {
-    const decoded = await verifyToken<{ id: string }>(token);
+    const decoded = await verifyToken<AuthenticatedUser>(token);
     return decoded?.id || null;
   }
   return null;
 }
+export async function getUserFromRequest(request: NextRequest): Promise<AuthenticatedUser | null> {
+  const token = await getJwtFromRequest(request);
+  if (token) {
+    const decoded = await verifyToken<AuthenticatedUser>(token);
+    return decoded || null;
+  }
+  return null;
+}
+
 
 export async function getJwtFromRequest(request: NextRequest): Promise<string | null> {
     const authHeader = request.headers.get('Authorization');
@@ -72,4 +84,24 @@ export async function getJwtFromRequest(request: NextRequest): Promise<string | 
     }
     
     return null;
+}
+
+export const API_TOKEN_PREFIX = "panda_pat_";
+const API_TOKEN_LENGTH = 32; // Length of the random part after the prefix
+
+export function generateApiTokenString(): { rawToken: string, prefix: string } {
+  const randomBytes = crypto.randomBytes(API_TOKEN_LENGTH);
+  const tokenPart = randomBytes.toString('hex').slice(0, API_TOKEN_LENGTH * 2); // Ensure enough hex chars
+  const rawToken = `${API_TOKEN_PREFIX}${tokenPart}`;
+  const prefix = `${API_TOKEN_PREFIX}${tokenPart.slice(0, 8)}`; // e.g., panda_pat_abcdef12
+  return { rawToken, prefix };
+}
+
+export async function hashApiToken(token: string): Promise<string> {
+  // Using bcrypt for API tokens as well, for consistency. SHA256 is also an option.
+  return bcrypt.hash(token, SALT_ROUNDS);
+}
+
+export async function compareApiToken(token: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(token, hash);
 }

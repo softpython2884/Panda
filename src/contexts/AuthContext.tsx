@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import type { UserRole } from '@/lib/schemas';
 
 interface User {
   id: string;
@@ -11,6 +12,7 @@ interface User {
   username?: string;
   firstName?: string | null;
   lastName?: string | null;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -83,12 +85,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       if (res.ok) {
-        // After successful registration, log the user in to populate the user context
-        // and trigger fetchUser which is listened by other components.
-        // This also ensures the user object in context includes all fields like username.
-        // const loginSuccess = await login(email, passwordInput);
-        // return loginSuccess; // Or just return true and let login handle toasts
-        return true; // Caller will handle login
+        return true; 
       } else {
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
         return false;

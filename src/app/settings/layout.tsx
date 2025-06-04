@@ -4,19 +4,15 @@ import type { ReactNode } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Loader2, UserCircle, Link as LinkIcon, Palette, Server, Cloud, ShieldCheck, LayoutDashboard } from "lucide-react"; // Added LayoutDashboard, LinkIcon
+import { Loader2, UserCircle, KeyRound, LayoutDashboard } from "lucide-react"; 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const sidebarNavItems = [
   { title: "Mon Profil", href: "/settings/profile", icon: UserCircle },
-  { title: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard }, // Link to main dashboard
-  // Future items:
-  // { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Server }, // More specific link
-  // { title: "Mon Cloud", href: "/dashboard/cloud", icon: Cloud },
-  // { title: "Sécurité", href: "/settings/security", icon: ShieldCheck },
-  // { title: "Apparence", href: "/settings/appearance", icon: Palette },
+  { title: "Mes Tokens d'API", href: "/settings/api-tokens", icon: KeyRound },
+  { title: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard }, 
 ];
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
@@ -51,13 +47,13 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col md:flex-row gap-8 min-h-[calc(100vh-var(--navbar-height,100px)-2rem)]">
       <aside className="md:w-64 lg:w-72 xl:w-80 flex-shrink-0">
-        <div className="sticky top-24 space-y-4"> {/* top value approx navbar height + some padding */}
+        <div className="sticky top-24 space-y-4"> 
           <h2 className="text-xl font-headline font-semibold px-4">Paramètres</h2>
           <nav className="flex flex-col gap-1 px-2">
             {sidebarNavItems.map((item) => (
               <Button
                 key={item.title}
-                variant={pathname.startsWith(item.href) ? "default" : "ghost"} // Use startsWith for active state
+                variant={pathname.startsWith(item.href) ? "default" : "ghost"} 
                 className={cn(
                   "w-full justify-start",
                   pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"

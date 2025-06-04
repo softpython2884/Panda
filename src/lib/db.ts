@@ -2,6 +2,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { PANDA_ADMIN_EMAIL } from '@/lib/schemas'; // Import admin email
 
 const DB_DIR = path.join(process.cwd(), 'db');
 const DB_PATH = path.join(DB_DIR, 'panda_pod.db');
@@ -92,27 +93,19 @@ function initializeSchema() {
 
   if (schemaVersion < 4) {
     try {
-      // Step 1: Add columns without UNIQUE constraint on username initially
       db.exec('ALTER TABLE users ADD COLUMN username TEXT;');
       db.exec('ALTER TABLE users ADD COLUMN firstName TEXT;');
       db.exec('ALTER TABLE users ADD COLUMN lastName TEXT;');
       console.log("Added username (nullable), firstName, lastName columns to users table.");
 
-      // Step 2: Populate username for existing users (if any, and if username is NULL)
-      // Using email as a fallback. Ensure this logic aligns with your desired uniqueness.
-      // Since email is already UNIQUE, this should provide unique usernames for existing users without one.
       const stmt = db.prepare('UPDATE users SET username = email WHERE username IS NULL');
       stmt.run();
       console.log("Attempted to populate username for existing users using their email as a fallback.");
-
-      // Step 3: Create a UNIQUE index on the username column
-      // IF NOT EXISTS is good practice in case migration runs multiple times due to partial failure
+      
       db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);');
       console.log("Created UNIQUE index on username column.");
       
-      console.log("Database schema upgraded to version 4 for user profiles (username, firstName, lastName added).");
     } catch (e) {
-        // Catch specific errors if needed, e.g., if CREATE UNIQUE INDEX fails due to actual duplicates after update
         if (e instanceof Error) {
             if (e.message.includes('duplicate column name')) {
                  console.warn("One or more columns (username, firstName, lastName) might already exist on users table (v4 migration partial run?).");
@@ -124,14 +117,66 @@ function initializeSchema() {
         } else {
             console.error("Unknown error during v4 schema migration:", e);
         }
-        // Do not re-throw if it's just a "duplicate column" warning from a partial run,
-        // but do re-throw for critical errors like failing to create a unique index due to data issues.
         if (e instanceof Error && !(e.message.includes('duplicate column name'))) {
-            throw e; // Re-throw critical errors
+            throw e; 
         }
     }
     db.pragma('user_version = 4');
+    console.log("Database schema upgraded to version 4 for user profiles.");
     schemaVersion = 4;
+  }
+
+  if (schemaVersion < 5) {
+    try {
+      db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'FREE' NOT NULL;");
+      console.log("Added role column to users table (migration step for v5).");
+      if (PANDA_ADMIN_EMAIL) {
+        const adminUser = db.prepare('SELECT id FROM users WHERE email = ?').get(PANDA_ADMIN_EMAIL);
+        if (adminUser) {
+          db.prepare("UPDATE users SET role = 'ADMIN' WHERE id = ?").run((adminUser as any).id);
+          console.log(`User ${PANDA_ADMIN_EMAIL} assigned ADMIN role.`);
+        } else {
+          console.log(`Admin email ${PANDA_ADMIN_EMAIL} not found, no user assigned ADMIN role automatically during migration.`);
+        }
+      } else {
+        console.log("PANDA_ADMIN_EMAIL not set, no user assigned ADMIN role automatically during migration.");
+      }
+    } catch (e) {
+        if (e instanceof Error && e.message.includes('duplicate column name: role')) {
+            console.warn("Column 'role' already exists on users table (v5 migration).");
+        } else {
+            throw e;
+        }
+    }
+    db.pragma('user_version = 5');
+    console.log("Database schema upgraded to version 5 for user roles.");
+    schemaVersion = 5;
+  }
+
+  if (schemaVersion < 6) {
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS api_tokens (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          token_prefix TEXT NOT NULL UNIQUE, -- For quick lookup and to show to user
+          token_hash TEXT NOT NULL UNIQUE,   -- Hashed full token for security
+          scopes TEXT, -- JSON array of strings, e.g., ["read:service", "write:service"]
+          last_used_at DATETIME,
+          expires_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      console.log("Created api_tokens table (migration step for v6).");
+    } catch (e) {
+      console.error("Error creating api_tokens table:", e);
+      throw e;
+    }
+    db.pragma('user_version = 6');
+    console.log("Database schema upgraded to version 6 for API tokens.");
+    schemaVersion = 6;
   }
 }
 
