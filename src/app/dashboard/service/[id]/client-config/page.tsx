@@ -7,22 +7,23 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, ArrowLeft, ClipboardCopy, Download, AlertTriangleIcon, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, ClipboardCopy, Download, AlertTriangleIcon, Info, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { FRP_SERVER_ADDR, FRP_SERVER_PORT, FRP_AUTH_TOKEN, FRP_SERVER_BASE_DOMAIN } from '@/lib/schemas';
+import { FRP_SERVER_ADDR, FRP_SERVER_PORT, FRP_AUTH_TOKEN, FRP_SERVER_BASE_DOMAIN, type FrpServiceType } from '@/lib/schemas';
 
 interface ServiceConfigData {
   name: string;
-  frpType: 'http' | 'https' | 'tcp' | 'udp' | 'stcp' | 'xtcp';
+  frpType: FrpServiceType;
   localPort: number;
   subdomain: string;
 }
 
 const FRPC_EXE_URL = "https://github.com/softpython2884/Panda-reverse-proxy/releases/download/client/frpc.exe";
-// Note: frpc binaries for other OS (Linux, macOS) are available at https://github.com/fatedier/frp/releases
+const FRP_OFFICIAL_RELEASES_URL = "https://github.com/fatedier/frp/releases";
+const FRP_FULL_CONFIG_EXAMPLE_URL = "https://github.com/fatedier/frp/blob/master/conf/frps_full_example.toml";
+
 
 function generateFrpcToml(config: ServiceConfigData): string {
-  // Base configuration, always included
   let frpcToml = `serverAddr = "${FRP_SERVER_ADDR}"
 serverPort = ${FRP_SERVER_PORT}
 
@@ -31,11 +32,10 @@ auth.token = "${FRP_AUTH_TOKEN}" # This token MUST match the one in your frps.to
 
 log.to = "console" # You can change this to a file path e.g., "./frpc.log"
 log.level = "info" # Other levels: trace, debug, warn, error
-transport.tls.enable = true # Encrypts communication between frpc and frps, recommended
+transport.tls.enable = true # Encrypts communication between frpc and frps, recommended for security.
 
 `;
 
-  // Proxy specific configuration
   frpcToml += `
 [[proxies]]
 name = "${config.name}" # This is an identifier for the proxy
@@ -44,37 +44,22 @@ localIP = "127.0.0.1" # Assumes your service runs on the same machine as frpc
 localPort = ${config.localPort}
 `;
 
-  // Subdomain is primarily for http and https. For other types, it might require specific frps setup (e.g. tcpmux)
-  // or frps might ignore it if not configured for subdomain-based routing for these types.
-  // However, as per user's desired TOML structure, we include it.
+  // Subdomain is primarily for http and https. 
+  // For TCP/UDP, frps needs specific configuration (like tcpmux or custom VHOST handling for TCP/UDP) for subdomains to route correctly.
+  // If frps is not set up for this, frpc will try to register the subdomain but frps might ignore it or require a remote_port.
+  // PANDA currently generates it assuming frps can handle subdomains for all selected types.
   if (config.subdomain) {
     frpcToml += `subdomain = "${config.subdomain}"\n`;
   }
-
-  // Add advanced options here if they were part of FrpServiceInput and collected from user
-  // Example (if these fields were in ServiceConfigData):
-  // if (config.useEncryption) {
-  //   frpcToml += `transport.useEncryption = true\n`;
-  // }
-  // if (config.useCompression) {
-  //   frpcToml += `transport.useCompression = true\n`;
-  // }
-  // if (config.frpType === "http" && config.locations) {
-  //   frpcToml += `customDomains = "${config.subdomain}.${FRP_SERVER_BASE_DOMAIN}"\n`; // customDomains is often used with locations
-  //   frpcToml += `locations = "${config.locations}"\n`;
-  // }
-  // if (config.frpType === "http" && config.hostHeaderRewrite) {
-  //    frpcToml += `hostHeaderRewrite = "${config.hostHeaderRewrite}"\n`;
-  // }
-
-
-  // For STCP and XTCP, a secretKey is often used.
-  // PANDA doesn't manage this key yet. User would need to add it manually if required by their frps setup.
+  
+  // Note for advanced users:
+  // You can add more frp options here based on the official frp documentation,
+  // such as transport.useEncryption, transport.useCompression, customDomains, locations, hostHeaderRewrite, etc.
+  // Example for STCP/XTCP (if you're using these types):
   if (config.frpType === "stcp" || config.frpType === "xtcp") {
     frpcToml += `# For STCP/XTCP, you might need a secretKey. Add it here if your frps requires it:\n`;
-    frpcToml += `# secretKey = "your_secret_key"\n`;
+    frpcToml += `# secretKey = "your_very_secret_key_here"\n`;
   }
-
 
   return frpcToml;
 }
@@ -86,55 +71,67 @@ function generateFrpsTomlExample(): string {
 # Port for frpc clients to connect to frps.
 bindPort = ${FRP_SERVER_PORT}
 
-# Authentication token. MUST match the token in frpc.toml and PANDA's FRP_AUTH_TOKEN env variable.
+# Authentication token. MUST match the token in frpc.toml AND PANDA's FRP_AUTH_TOKEN env variable.
 auth.token = "${FRP_AUTH_TOKEN}"
 
-# Subdomain configuration for HTTP/HTTPS services.
+# Subdomain configuration.
 # Your DNS for *.${FRP_SERVER_BASE_DOMAIN} (e.g., *.panda.nationquest.fr) must point to this server's public IP.
 subdomainHost = "${FRP_SERVER_BASE_DOMAIN}"
-vhostHTTPPort = 80 # Port frps listens on for HTTP requests to subdomains (e.g., http://sub.yourdomain.com)
-vhostHTTPSPort = 443 # Port frps listens on for HTTPS requests (requires TLS certs configured below)
 
-# For TLS on vhostHTTPSPort (optional, but recommended for HTTPS subdomains)
+# For HTTP/HTTPS subdomains to work, specify the ports frps will listen on for these.
+vhostHTTPPort = 80
+vhostHTTPSPort = 443
+
+# For TLS on vhostHTTPSPort (recommended for HTTPS subdomains):
+# Ensure you have valid SSL certificates.
 # tls.certFile = "/path/to/your/fullchain.pem"
 # tls.keyFile = "/path/to/your/privkey.pem"
 
-# Enable dashboard (optional)
-# webServer.addr = "0.0.0.0" # Listen on all interfaces
+# To allow subdomains for TCP/UDP types (e.g. {subdomain}.${FRP_SERVER_BASE_DOMAIN} resolving to a specific frpc client for TCP/UDP):
+# This is more advanced. One common method is using TCP Multiplexing:
+# tcpmuxHTTPConnectPort = 7001 # Example port. frpc would then use type="tcpmux" and multiplexer="httpconnect".
+# Or, you might need to map remote ports for TCP/UDP manually in frps if not using tcpmux with subdomains.
+# The current PANDA generated frpc.toml uses 'subdomain' for all types. Ensure your frps is configured to handle this as desired.
+# If frps is not configured for subdomain routing for TCP/UDP, the 'subdomain' field for these types in frpc.toml
+# might be informational or frpc might attempt to use a remote_port based on some frps logic.
+# Consult frp documentation for advanced subdomain routing for non-HTTP types.
+
+# Enable dashboard (optional but useful)
+# webServer.addr = "0.0.0.0" # Listen on all interfaces for dashboard access
 # webServer.port = 7500      # Port for dashboard
 # webServer.user = "admin"
-# webServer.password = "admin_password"
+# webServer.password = "your_strong_dashboard_password"
 
 # Log settings
 log.to = "./frps.log" # Or "console"
 log.level = "info"
-log.maxDays = 3
+log.maxDays = 7
 
-# To make subdomains work for TCP/UDP types as {subdomain}.${FRP_SERVER_BASE_DOMAIN},
-# you might need more advanced frps configurations like:
-# tcpmuxHTTPConnectPort = 7001 # And clients use type = "tcpmux", multiplexer = "httpconnect"
-# Or a Virtual Network (TUN/TAP device) setup with frp.
-# The basic subdomainHost above primarily works for HTTP/HTTPS.
-# For simple TCP/UDP, frpc usually specifies a 'remotePort' that frps listens on.
-# If your frpc.toml uses 'subdomain' for TCP/UDP, ensure your frps handles it.
+# Ensure transport.tls.enable = true in frps.toml if frpc uses it.
+# transport.tls.force = true # Optional: to enforce TLS connections only from frpc
 `;
 }
 
 
-const RUN_BAT_CONTENT = `@echo off
-title Lancement du tunnel PANDA
-echo ==========================================
-echo        Demarrage du tunnel Panda
-echo ==========================================
+const RUN_BAT_CONTENT_TEMPLATE = `@echo off
+title Lancement du tunnel PANDA pour {SERVICE_NAME}
+echo ========================================================
+echo        Demarrage du tunnel PANDA
+echo        Service: {SERVICE_NAME}
+echo ========================================================
 echo.
 echo Configuration:
 echo   Serveur PANDA FRP: ${FRP_SERVER_ADDR}:${FRP_SERVER_PORT}
-echo   Votre sous-domaine (pour HTTP/S): ${"{subdomain}"}.${FRP_SERVER_BASE_DOMAIN}
+echo   Type de tunnel: {FRP_TYPE}
+echo   Port Local: {LOCAL_PORT}
+echo   Sous-domaine expose: {SUBDOMAIN}.${FRP_SERVER_BASE_DOMAIN}
 echo.
 echo Lancement de frpc.exe avec frpc.toml...
-echo Si le tunnel ne demarre pas, verifiez votre fichier frpc.toml 
-echo et que frpc.exe est dans ce dossier.
-echo Verifiez aussi que le token dans frpc.toml correspond a celui du serveur FRP.
+echo Si le tunnel ne demarre pas, verifiez:
+echo   1. Votre fichier frpc.toml est correct.
+echo   2. frpc.exe est dans ce dossier.
+echo   3. Le token dans frpc.toml correspond a celui du serveur FRP PANDA.
+echo   4. Votre service local sur le port {LOCAL_PORT} est bien demarre.
 echo.
 
 REM Lance frpc avec le fichier de config
@@ -143,7 +140,8 @@ frpc.exe -c frpc.toml
 echo.
 echo Tunnel arrete.
 echo Si une erreur "authentication_failed" apparait, verifiez votre token dans frpc.toml.
-echo Appuyez sur une touche pour fermer.
+echo Si une erreur "proxy [xxx] start error: port already used", un autre programme utilise le port {LOCAL_PORT} ou le port distant sur le serveur est pris.
+echo Appuyez sur une touche pour fermer cette fenetre.
 pause >nul
 exit
 `;
@@ -168,23 +166,31 @@ export default function ClientConfigPage() {
     setIsLoading(true);
     fetch(`/api/manager/service/${serviceId}`)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch service details for config generation');
+        if (!res.ok) {
+          return res.json().then(errData => { throw new Error(errData.error || 'Failed to fetch service details for config generation')});
+        }
         return res.json();
       })
       .then((data: ServiceConfigData) => {
         if (!data.name || !data.frpType || data.localPort === undefined || !data.subdomain) {
-            throw new Error('Incomplete service data received from API.');
+            throw new Error('Incomplete service data received from API. Required fields are missing.');
         }
         setServiceConfig(data);
         setFrpcTomlContent(generateFrpcToml(data));
-        setRunBatSubstituted(RUN_BAT_CONTENT.replace('${"{subdomain}"}', data.subdomain));
+        
+        let batContent = RUN_BAT_CONTENT_TEMPLATE.replace(/{SERVICE_NAME}/g, data.name);
+        batContent = batContent.replace(/{FRP_TYPE}/g, data.frpType.toUpperCase());
+        batContent = batContent.replace(/{LOCAL_PORT}/g, String(data.localPort));
+        batContent = batContent.replace(/{SUBDOMAIN}/g, data.subdomain);
+        setRunBatSubstituted(batContent);
+
         setFrpsTomlExample(generateFrpsTomlExample());
         setError(null);
       })
       .catch(err => {
         console.error("Error fetching service for config:", err);
         setError(err.message || 'Could not load service configuration.');
-        toast({ title: "Error", description: err.message, variant: "destructive" });
+        toast({ title: "Error Loading Config", description: err.message, variant: "destructive" });
       })
       .finally(() => setIsLoading(false));
   }, [serviceId, toast]);
@@ -192,7 +198,7 @@ export default function ClientConfigPage() {
   const handleCopyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
       .then(() => toast({ title: "Copied!", description: `${label} copied to clipboard.` }))
-      .catch(() => toast({ title: "Copy Failed", description: `Could not copy ${label}.`, variant: "destructive" }));
+      .catch(() => toast({ title: "Copy Failed", description: `Could not copy ${label}. Please copy manually.`, variant: "destructive" }));
   };
 
   if (isLoading) {
@@ -220,7 +226,7 @@ export default function ClientConfigPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <Button variant="outline" asChild className="mb-6 print:hidden">
         <Link href="/dashboard">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -230,13 +236,13 @@ export default function ClientConfigPage() {
 
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-3xl font-headline">PANDA Tunnel Client Setup</CardTitle>
+          <CardTitle className="text-3xl font-headline">PANDA Tunnel Client Setup Guide</CardTitle>
           <CardDescription>
-            Instructions for your service: <span className="font-semibold text-primary">{serviceConfig.name}</span>
+            This guide helps you connect your local service: <strong className="text-primary">{serviceConfig.name}</strong> to the PANDA Network.
             <br />
-            Public Access (HTTP/S): <code className="text-sm bg-muted px-1 rounded">{serviceConfig.subdomain}.{FRP_SERVER_BASE_DOMAIN}</code>
+            Your service will be accessible via: <code className="text-sm bg-muted px-1 rounded">{serviceConfig.subdomain}.{FRP_SERVER_BASE_DOMAIN}</code>
             <br />
-            Local Service: <code className="text-sm bg-muted px-1 rounded">127.0.0.1:{serviceConfig.localPort}</code> ({serviceConfig.frpType.toUpperCase()})
+            Local Service Details: <code className="text-sm bg-muted px-1 rounded">127.0.0.1:{serviceConfig.localPort}</code> (Type: {serviceConfig.frpType.toUpperCase()})
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -244,29 +250,31 @@ export default function ClientConfigPage() {
             <AlertTriangleIcon className="h-5 w-5" />
             <AlertTitle>Antivirus Warning!</AlertTitle>
             <AlertDescription>
-              The PANDA Tunnel client (<code className="font-mono bg-destructive-foreground/20 px-1 rounded">frpc.exe</code>) might be flagged by some antivirus software.
-              This is a common issue with tunneling tools. Please add an exception for <code className="font-mono bg-destructive-foreground/20 px-1 rounded">frpc.exe</code> in your antivirus settings if this occurs.
-              The software is open-source (<a href="https://github.com/fatedier/frp" target="_blank" rel="noopener noreferrer" className="underline">frp by fatedier</a>) and its code can be inspected.
+              The PANDA Tunnel client (<code className="font-mono bg-destructive-foreground/20 px-1 rounded text-destructive-foreground">frpc.exe</code>) might be flagged as potentially unwanted software by some antivirus programs.
+              This is common for tunneling tools due to their nature. Please ensure you download it from the official link provided and, if necessary, add an exception for <code className="font-mono bg-destructive-foreground/20 px-1 rounded text-destructive-foreground">frpc.exe</code> in your antivirus settings.
+              The <code className="font-mono bg-destructive-foreground/20 px-1 rounded text-destructive-foreground">frp</code> software is open-source (<a href="https://github.com/fatedier/frp" target="_blank" rel="noopener noreferrer" className="underline font-semibold">frp by fatedier on GitHub</a>) and its code can be inspected.
             </AlertDescription>
           </Alert>
 
           <Alert variant="default">
             <Info className="h-5 w-5" />
-            <AlertTitle>Important Notes</AlertTitle>
+            <AlertTitle>Important Setup Notes</AlertTitle>
             <AlertDescription>
-              <ul>
-                <li className="mb-1">- The <code className="font-mono bg-muted px-1 rounded">auth.token</code> in <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> below is based on PANDA&apos;s configuration. It **must** match the token set in your <code className="font-mono bg-muted px-1 rounded">frps.toml</code> on your server.</li>
-                <li className="mb-1">- If you edit this service in PANDA, you must regenerate/copy the new <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> and restart your <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> client.</li>
-                <li>- PANDA helps you generate client configurations; it does not directly control your running <code className="font-mono bg-muted px-1 rounded">frps</code> server or <code className="font-mono bg-muted px-1 rounded">frpc</code> clients.</li>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>The <code className="font-mono bg-muted px-1 rounded">auth.token</code> in <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> (below) is crucial. It **must exactly match** the token configured on your PANDA <code className="font-mono bg-muted px-1 rounded">frps</code> server. PANDA uses the `FRP_AUTH_TOKEN` environment variable (defaulting to &quot;supersecret&quot; if not set).</li>
+                <li>If you edit this service&apos;s settings in the PANDA dashboard (e.g., change port, subdomain), you **must** come back to this page, copy the updated <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> content, and **restart your local <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> client** for changes to take effect.</li>
+                <li>PANDA generates client configurations; it does not directly control or update running <code className="font-mono bg-muted px-1 rounded">frps</code> servers or <code className="font-mono bg-muted px-1 rounded">frpc</code> clients.</li>
+                 <li>Ensure your local service (e.g., web server, game server) is running on <code className="font-mono bg-muted px-1 rounded">127.0.0.1:{serviceConfig.localPort}</code> before starting the tunnel.</li>
               </ul>
             </AlertDescription>
           </Alert>
 
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Step 1: Download PANDA Tunnel Client (<code className="font-mono bg-muted px-1 rounded">frpc.exe</code> for Windows)</h3>
+            <h3 className="text-xl font-semibold">Step 1: Download PANDA Tunnel Client (<code className="font-mono bg-muted px-1 rounded">frpc.exe</code> for Windows)</h3>
             <p className="text-sm text-muted-foreground">
-              Download the client executable. For other operating systems (Linux, macOS), get the appropriate <code className="font-mono bg-muted px-1 rounded">frpc</code> binary from the official <a href="https://github.com/fatedier/frp/releases" target="_blank" rel="noopener noreferrer" className="underline">frp releases page</a>.
+              Create a new folder on your computer for this tunnel (e.g., <code className="font-mono bg-muted px-1 rounded">C:\PANDA-Tunnels\{serviceConfig.name}</code>).
+              Download the client executable into this folder. For other operating systems (Linux, macOS), get the appropriate <code className="font-mono bg-muted px-1 rounded">frpc</code> binary from the official <a href={FRP_OFFICIAL_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">frp releases page <ExternalLink className="inline h-3 w-3"/></a>.
             </p>
             <Button asChild variant="default">
               <a href={FRPC_EXE_URL} target="_blank" rel="noopener noreferrer">
@@ -276,10 +284,10 @@ export default function ClientConfigPage() {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Step 2: Create Client Configuration File (<code className="font-mono bg-muted px-1 rounded">frpc.toml</code>)</h3>
+            <h3 className="text-xl font-semibold">Step 2: Create Client Configuration File (<code className="font-mono bg-muted px-1 rounded">frpc.toml</code>)</h3>
             <p className="text-sm text-muted-foreground">
-              Create a file named <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> in a new folder. Place the downloaded <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> (or other OS binary) in this same folder.
-              Copy the content below into <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>.
+              In the folder you created, create a new text file named <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>.
+              Copy the exact content below and paste it into your <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> file.
             </p>
             <div className="relative p-4 bg-muted rounded-md border max-h-80 overflow-y-auto">
               <pre className="text-xs whitespace-pre-wrap break-all"><code>{frpcTomlContent}</code></pre>
@@ -292,13 +300,16 @@ export default function ClientConfigPage() {
                 <ClipboardCopy className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+                For advanced customization, refer to the <a href="https://gofrp.org/docs/examples/client/" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">frp client documentation <ExternalLink className="inline h-3 w-3"/></a>.
+            </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Step 3: Create Startup Script (<code className="font-mono bg-muted px-1 rounded">run.bat</code> for Windows)</h3>
+            <h3 className="text-xl font-semibold">Step 3: Create Startup Script (<code className="font-mono bg-muted px-1 rounded">run.bat</code> for Windows)</h3>
             <p className="text-sm text-muted-foreground">
-              Create a file named <code className="font-mono bg-muted px-1 rounded">run.bat</code> in the same folder.
-              Copy the content below into this file. This script will start the tunnel.
+              In the same folder, create another new text file named <code className="font-mono bg-muted px-1 rounded">run.bat</code>.
+              Copy the content below into this file. This script will start the tunnel using your <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>.
             </p>
              <div className="relative p-4 bg-muted rounded-md border max-h-60 overflow-y-auto">
               <pre className="text-xs whitespace-pre-wrap break-all"><code>{runBatSubstituted}</code></pre>
@@ -314,31 +325,39 @@ export default function ClientConfigPage() {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Step 4: Run the Tunnel</h3>
+            <h3 className="text-xl font-semibold">Step 4: Run the Tunnel</h3>
             <p className="text-sm text-muted-foreground">
-              Ensure <code className="font-mono bg-muted px-1 rounded">frpc.exe</code>, <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>, and <code className="font-mono bg-muted px-1 rounded">run.bat</code> are all in the same folder. Then, simply double-click <code className="font-mono bg-muted px-1 rounded">run.bat</code> to start your PANDA Tunnel!
-              A command prompt window will open and show the tunnel status.
+              Ensure <code className="font-mono bg-muted px-1 rounded">frpc.exe</code>, <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>, and <code className="font-mono bg-muted px-1 rounded">run.bat</code> are all in the same folder. Then, simply double-click <code className="font-mono bg-muted px-1 rounded">run.bat</code> to start your PANDA Tunnel.
+              A command prompt window will open and show the tunnel status and logs. Keep this window open as long as you want your tunnel to be active.
             </p>
-             <p className="text-xs text-muted-foreground">
-              <strong className="font-semibold">For Linux/macOS users:</strong> Save <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>, download the appropriate <code className="font-mono bg-muted px-1 rounded">frpc</code> binary,
-              make it executable (<code className="font-mono bg-muted px-1 rounded">chmod +x frpc</code>), and run <code className="font-mono bg-muted px-1 rounded">./frpc -c ./frpc.toml</code> in your terminal from the folder.
+             <p className="text-sm text-muted-foreground">
+              <strong className="font-semibold">For Linux/macOS users:</strong> Save <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> to a folder, download the appropriate <code className="font-mono bg-muted px-1 rounded">frpc</code> binary from the <a href={FRP_OFFICIAL_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">frp releases page <ExternalLink className="inline h-3 w-3"/></a> into the same folder,
+              make it executable (<code className="font-mono bg-muted px-1 rounded">chmod +x ./frpc</code>), and then run <code className="font-mono bg-muted px-1 rounded">./frpc -c ./frpc.toml</code> in your terminal from that folder.
              </p>
           </div>
         </CardContent>
          <CardFooter className="border-t pt-4">
-             <Button onClick={() => window.print()} variant="outline"><Download className="mr-2 h-4 w-4" /> Print/Save PDF Instructions</Button>
+             <Button onClick={() => window.print()} variant="outline"><Download className="mr-2 h-4 w-4" /> Print / Save PDF Instructions</Button>
         </CardFooter>
       </Card>
 
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Example Server Configuration (<code className="font-mono bg-muted px-1 rounded">frps.toml</code>)</CardTitle>
+          <CardTitle className="text-2xl font-headline">Example PANDA Server Configuration (<code className="font-mono bg-muted px-1 rounded">frps.toml</code>)</CardTitle>
           <CardDescription>
-            This is a basic example configuration for your <code className="font-mono bg-muted px-1 rounded">frps</code> server (which should run on <code className="font-mono bg-muted px-1 rounded">{FRP_SERVER_ADDR}</code>).
-            You will need to adapt it to your server environment and security needs.
+            This is a reference configuration for your <code className="font-mono bg-muted px-1 rounded">frps</code> server, which should be running on <code className="font-mono bg-muted px-1 rounded">{FRP_SERVER_ADDR}</code>.
+            You will need to adapt this to your server environment, security policies, and how you wish to handle different tunnel types with subdomains.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert variant="default" className="mb-4">
+             <Info className="h-5 w-5" />
+             <AlertTitle>Server-Side Setup is Key</AlertTitle>
+             <AlertDescription>
+                The PANDA dashboard helps you generate client configurations. However, the <code className="font-mono bg-muted px-1 rounded">frps</code> (server) must be correctly installed, configured, and running on your server (<code className="font-mono bg-muted px-1 rounded">{FRP_SERVER_ADDR}</code>) for the tunnels to work.
+                The example below is a starting point. You are responsible for the setup and maintenance of your <code className="font-mono bg-muted px-1 rounded">frps</code> instance.
+             </AlertDescription>
+          </Alert>
           <div className="relative p-4 bg-muted rounded-md border max-h-96 overflow-y-auto">
             <pre className="text-xs whitespace-pre-wrap break-all"><code>{frpsTomlExample}</code></pre>
             <Button
@@ -350,14 +369,12 @@ export default function ClientConfigPage() {
               <ClipboardCopy className="h-4 w-4" />
             </Button>
           </div>
-           <p className="text-xs text-muted-foreground mt-2">
-            Refer to the official <a href="https://github.com/fatedier/frp/blob/master/conf/frps_full_example.ini" target="_blank" rel="noopener noreferrer" className="underline">full frps configuration example</a> for all available options.
-            Remember to restart your <code className="font-mono bg-muted px-1 rounded">frps</code> service after changing its configuration.
+           <p className="text-sm text-muted-foreground mt-4">
+            For a comprehensive list of all server options, refer to the official <a href={FRP_FULL_CONFIG_EXAMPLE_URL} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">full frps configuration example <ExternalLink className="inline h-3 w-3"/></a>.
+            Remember to restart your <code className="font-mono bg-muted px-1 rounded">frps</code> service after making any changes to its configuration file.
            </p>
         </CardContent>
       </Card>
-
-
     </div>
   );
 }

@@ -19,7 +19,7 @@ import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_D
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save } from "lucide-react"; // Removed Settings2 as Save is more appropriate for edit
+import { Loader2, Save, AlertTriangleIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -46,9 +46,9 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     defaultValues: {
       name: "",
       description: "",
-      localPort: '' as any, // Initialize with empty string
+      localPort: '' as any, // Initialize with empty string, will be parsed
       subdomain: "",
-      frpType: "http",
+      frpType: "http", // Default frpType
     },
   });
 
@@ -56,21 +56,25 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     setIsFetching(true);
     fetch(`/api/manager/service/${serviceId}`)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch service details');
+        if (!res.ok) {
+           return res.json().then(errData => { throw new Error(errData.error || 'Failed to fetch service details')});
+        }
         return res.json();
       })
       .then((data: FrpServiceInput) => {
+        // Ensure localPort is treated as string for the form input if it's a number
+        const localPortValue = data.localPort === undefined || data.localPort === null ? '' : String(data.localPort);
         form.reset({
-            name: data.name,
-            description: data.description,
-            localPort: data.localPort === undefined || data.localPort === null ? '' : String(data.localPort) as any,
-            subdomain: data.subdomain,
+            name: data.name || "",
+            description: data.description || "",
+            localPort: localPortValue as any, // Zod will parse it back to number on submit
+            subdomain: data.subdomain || "",
             frpType: frpServiceTypes.includes(data.frpType) ? data.frpType : "http",
         });
       })
       .catch(err => {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
-        router.push("/dashboard");
+        toast({ title: "Error Loading Service", description: err.message, variant: "destructive" });
+        router.push("/dashboard"); // Redirect if service can't be loaded
       })
       .finally(() => setIsFetching(false));
   }, [serviceId, form, toast, router]);
@@ -80,7 +84,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     try {
       const payload = {
         ...values,
-        localPort: Number(values.localPort),
+        localPort: Number(values.localPort), // Ensure localPort is a number before sending
       };
       const response = await fetch(`/api/manager/service/${serviceId}`, {
         method: 'PUT',
@@ -89,13 +93,17 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
       });
       const data = await response.json();
       if (response.ok) {
-        toast({ title: "Service Updated", description: `Service "${values.name}" tunnel updated successfully. You may need to restart your local frpc client with the new configuration.` });
+        toast({ 
+            title: "Service Updated", 
+            description: `Service "${values.name}" tunnel configuration updated. You MUST get the new client config and restart your local frpc client.`,
+            duration: 7000, // Longer duration for important message
+        });
         router.push("/dashboard");
       } else {
-        toast({ title: "Update Failed", description: data.error || "Could not update service.", variant: "destructive" });
+        toast({ title: "Update Failed", description: data.error || "Could not update service. The subdomain might already be in use.", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Update Error", description: "An unexpected error occurred.", variant: "destructive" });
+      toast({ title: "Update Error", description: "An unexpected error occurred during update.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +117,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     return (
       <div className="flex items-center justify-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
-        <p>Loading service details...</p>
+        <p className="text-muted-foreground">Loading service details...</p>
       </div>
     );
   }
@@ -119,12 +127,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Alert variant="default">
           <Info className="h-4 w-4" />
-          <AlertTitle>Important Note on Editing</AlertTitle>
+          <AlertTitle>Important: Applying Configuration Changes</AlertTitle>
           <AlertDescription>
-            Changes made here will update the configuration generated by PANDA.
-            You will need to download the new <code className="font-mono bg-muted px-1 rounded">frpc.toml</code> file (via &quot;Get Config&quot; on the dashboard)
-            and restart your local <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> client for these changes to take effect.
-            PANDA does not automatically update running frp clients.
+            After saving changes here, PANDA&apos;s record of your service is updated.
+            However, these changes are **not automatically applied** to your running <code className="font-mono bg-muted px-1 rounded">frpc</code> client.
+            <br />You **must** go to the &quot;Get Config&quot; page for this service (from the dashboard), obtain the new <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>, update your local file, and then **restart your <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> client** for the new settings to take effect.
           </AlertDescription>
         </Alert>
 
@@ -137,7 +144,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
               <FormControl>
                 <Input placeholder="MyGameServer" {...field} />
               </FormControl>
-              <FormDescription>A unique name for your service. Used in tunnel configuration. Allowed: letters, numbers, -, _</FormDescription>
+              <FormDescription>A unique name for your service. Used in tunnel configuration. Allowed: letters, numbers, hyphens, and underscores.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -167,7 +174,8 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                     type="number"
                     placeholder="e.g., 3000 or 25565"
                     {...field}
-                    value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                    // Value is managed as string by react-hook-form for type="number" when it can be empty
+                    // Zod schema handles parsing to number
                     onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
@@ -182,7 +190,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tunnel Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a tunnel type" />
@@ -196,7 +204,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Protocol of your local service. For Minecraft, use TCP and port 25565.</FormDescription>
+                <FormDescription>Protocol of your local service. For Minecraft (Java), use TCP and port 25565.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -213,7 +221,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                 </FormControl>
                 <FormDescription>
                   Your service will be accessible at <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
-                  Use lowercase letters, numbers, and hyphens. This is used for HTTP/HTTPS and informative for other types.
+                  Use lowercase letters, numbers, and hyphens. This is used for HTTP/HTTPS tunnel types and helps form the public URL.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
