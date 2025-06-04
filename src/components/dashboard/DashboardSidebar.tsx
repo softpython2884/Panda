@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from 'react'; // Added React import
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,8 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           </Link>
         </Button>
       );
-      return isMobile ? <NavLinkWrapper key={`${item.title}-wrapper-${Math.random()}`} asChild>{LinkComponent}</NavLinkWrapper> : <div key={`${item.title}-div-wrapper-${Math.random()}`}>{LinkComponent}</div>;
+      // Ensure unique keys for wrapper components
+      return isMobile ? <NavLinkWrapper key={`${item.href}-mobile-wrapper`} asChild>{LinkComponent}</NavLinkWrapper> : <div key={`${item.href}-desktop-wrapper`}>{LinkComponent}</div>;
     });
   };
 
