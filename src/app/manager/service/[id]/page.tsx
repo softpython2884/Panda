@@ -24,8 +24,8 @@ export default function EditServicePage({ params }: EditServicePageProps) {
       </Button>
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-3xl font-headline">Edit Service</CardTitle>
-          <CardDescription>Update the details for your service. Changes will be reflected across the PANDA Ecosystem.</CardDescription>
+          <CardTitle className="text-3xl font-headline">Edit PANDA Tunnel Service</CardTitle>
+          <CardDescription>Update the details for your tunnel service. Changes will affect your client configuration.</CardDescription>
         </CardHeader>
         <CardContent>
           <EditServiceForm serviceId={serviceId} />

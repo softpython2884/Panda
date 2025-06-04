@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PlusCircle, Globe, Edit3, Trash2, ExternalLink, Server, Link2, Loader2, AlertTriangle, PackageSearch } from "lucide-react";
+import { PlusCircle, Globe, Edit3, Trash2, ExternalLink, Server, Link2, Loader2, AlertTriangle, PackageSearch, DownloadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -18,15 +18,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { FRP_SERVER_BASE_DOMAIN } from "@/lib/schemas";
 
 interface Service {
   id: string;
   name: string;
   description: string;
-  domain: string;
-  type: string;
-  public_url: string; // Now mandatory
-  local_url: string;
+  domain: string; // For frp, this is the subdomain part
+  type: string; // For frp, this is 'http', 'tcp', etc. (frpType)
+  public_url: string; // Generated frp public URL: {subdomain}.{FRP_SERVER_BASE_DOMAIN}
+  local_port?: number; // frp local port
+  local_url?: string; // Legacy or informational "127.0.0.1:PORT"
+  // frp_type could also be here if differentiated in DB, but we use 'type'
 }
 
 export default function DashboardPage() {
@@ -88,10 +91,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-headline font-bold">My Services</h1>
+        <h1 className="text-3xl font-headline font-bold">My Tunnel Services</h1>
         <Button asChild>
           <Link href="/dashboard/register-service">
-            <PlusCircle className="mr-2 h-5 w-5" /> Register New Service
+            <PlusCircle className="mr-2 h-5 w-5" /> Register New Tunnel
           </Link>
         </Button>
       </div>
@@ -111,14 +114,14 @@ export default function DashboardPage() {
       {!error && services.length === 0 && (
         <Card className="text-center py-12">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">No Services Yet</CardTitle>
-            <CardDescription>You haven&apos;t registered any services. Get started by adding your first one!</CardDescription>
+            <CardTitle className="font-headline text-2xl">No Tunnel Services Yet</CardTitle>
+            <CardDescription>You haven&apos;t registered any PANDA Tunnels. Get started by adding your first one!</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
              <PackageSearch className="h-24 w-24 text-muted-foreground mb-6" />
             <Button asChild size="lg">
               <Link href="/dashboard/register-service">
-                <PlusCircle className="mr-2 h-5 w-5" /> Register Your First Service
+                <PlusCircle className="mr-2 h-5 w-5" /> Register Your First Tunnel
               </Link>
             </Button>
           </CardContent>
@@ -132,47 +135,45 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <CardTitle className="font-headline text-xl">{service.name}</CardTitle>
-                  <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">{service.type}</span>
+                  <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full uppercase">{service.type}</span>
                 </div>
+                 {/* 'domain' in DB is the frp subdomain. public_url is the full URL */}
                 <CardDescription className="flex items-center gap-1 text-sm pt-1">
                   <Globe className="h-4 w-4 text-primary" />
                   <a 
-                    href={`http://${service.domain}`} 
+                    href={service.public_url} // This is now the full frp URL
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline hover:text-accent transition-colors"
-                    title={`Access ${service.domain}`}
+                    className="text-primary hover:underline hover:text-accent transition-colors truncate"
+                    title={`Access ${service.public_url}`}
                   >
-                    {service.domain}
+                    {service.public_url}
                   </a>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-muted-foreground text-sm mb-3 line-clamp-3">{service.description}</p>
-                {service.public_url && (
-                  <div className="text-sm flex items-center gap-1 mb-1">
-                    <ExternalLink className="h-3 w-3 text-accent" />
-                    Public/Tunnel: <a href={service.public_url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate">{service.public_url}</a>
-                  </div>
-                )}
                 <div className="text-sm flex items-center gap-1">
                   <Server className="h-3 w-3 text-muted-foreground" />
-                  Local: <span className="text-muted-foreground truncate">{service.local_url}</span>
+                  Local Port: <span className="text-muted-foreground">{service.local_port || 'N/A'}</span>
                 </div>
               </CardContent>
-              <CardFooter className="border-t pt-4 flex gap-2">
-                <Button variant="outline" size="sm" asChild className="flex-1">
+              <CardFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" size="sm" asChild className="flex-1 w-full sm:w-auto">
                   <Link href={`/manager/service/${service.id}`}><Edit3 className="h-4 w-4 mr-1" /> Edit</Link>
+                </Button>
+                 <Button variant="secondary" size="sm" asChild className="flex-1 w-full sm:w-auto">
+                  <Link href={`/dashboard/service/${service.id}/client-config`}><DownloadCloud className="h-4 w-4 mr-1" /> Get Config</Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="flex-1"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
+                    <Button variant="destructive" size="sm" className="flex-1 w-full sm:w-auto"><Trash2 className="h-4 w-4 mr-1" /> Delete</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your service
+                        This action cannot be undone. This will permanently delete your tunnel service
                         &quot;{service.name}&quot; and remove its data from our servers.
                       </AlertDialogDescription>
                     </AlertDialogHeader>

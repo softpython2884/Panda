@@ -16,8 +16,8 @@ export default function RegisterServicePage() {
       </Button>
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-3xl font-headline">Register New Service</CardTitle>
-          <CardDescription>Add your service to the PANDA Ecosystem. Fill out the details below.</CardDescription>
+          <CardTitle className="text-3xl font-headline">Register New PANDA Tunnel</CardTitle>
+          <CardDescription>Configure your local service to be accessible via a PANDA Tunnel.</CardDescription>
         </CardHeader>
         <CardContent>
           <RegisterServiceForm />

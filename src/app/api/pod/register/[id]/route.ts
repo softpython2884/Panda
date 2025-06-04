@@ -1,11 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema } from '@/lib/schemas';
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes } from '@/lib/schemas'; // ServiceSchema is FrpServiceSchema
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
-
-const PANDA_TUNNEL_MAIN_HOST = process.env.PANDA_TUNNEL_MAIN_HOST;
 
 async function authorizeAndGetService(request: NextRequest, serviceId: string) {
   const authHeader = request.headers.get('Authorization');
@@ -42,42 +40,40 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     
     const body = await request.json();
-    const validationResult = ServiceSchema.safeParse(body);
+    const validationResult = ServiceSchema.safeParse(body); // ServiceSchema is FrpServiceSchema
 
     if (!validationResult.success) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
     }
     
-    const { name, description, local_url, domain, type } = validationResult.data;
-    let public_url_to_store = validationResult.data.public_url; // User input
+    const { name, description, localPort, subdomain, frpType } = validationResult.data;
+    
+    const generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`;
+    const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
-    if (PANDA_TUNNEL_MAIN_HOST && domain) {
-      const derived_public_url = `http://${domain}.${PANDA_TUNNEL_MAIN_HOST}`;
-      try {
-        new URL(derived_public_url); // Validate structure
-        public_url_to_store = derived_public_url;
-      } catch (e) {
-        console.error(`Invalid constructed tunnel URL for update: ${derived_public_url}`, e);
-        if (!public_url_to_store) {
-             return NextResponse.json({ error: 'Failed to determine public URL for the service update.' }, { status: 500 });
-        }
-      }
-    }
-
-    if (!public_url_to_store) {
-        return NextResponse.json({ error: 'Public URL is required and could not be determined for update.' }, { status: 400 });
-    }
-
-    if (domain !== authResult.service.domain) {
-        const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(domain, serviceId);
+    if (subdomain !== authResult.service.domain) { // 'domain' column stores the frp_subdomain
+        const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(subdomain, serviceId);
         if (existingDomain) {
-            return NextResponse.json({ error: 'New domain already registered by another service' }, { status: 409 });
+            return NextResponse.json({ error: 'New subdomain already registered by another service' }, { status: 409 });
         }
     }
 
     db.prepare(
-      'UPDATE services SET name = ?, description = ?, local_url = ?, public_url = ?, domain = ?, type = ? WHERE id = ? AND user_id = ?'
-    ).run(name, description, local_url, public_url_to_store, domain, type, serviceId, authResult.userId);
+      `UPDATE services 
+       SET name = ?, description = ?, local_url = ?, public_url = ?, domain = ?, type = ?, local_port = ?, frp_type = ?
+       WHERE id = ? AND user_id = ?`
+    ).run(
+        name, 
+        description, 
+        legacy_local_url_info,
+        generated_public_url, 
+        subdomain, // Storing frp_subdomain in 'domain' column
+        frpType,   // Storing frp_type in 'type' column
+        localPort,
+        frpType,   // Storing frp_type also in 'frp_type' column
+        serviceId, 
+        authResult.userId
+    );
     
     const updatedService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
     return NextResponse.json({ message: 'Service updated successfully', service: updatedService });
@@ -88,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     console.error('Service update error:', error);
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed: services.domain')) {
-        return NextResponse.json({ error: 'Domain already registered' }, { status: 409 });
+        return NextResponse.json({ error: 'Subdomain already registered' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -118,7 +114,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (authResult.error) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
-     return NextResponse.json(authResult.service);
+     // Transform data to match FrpServiceInput structure for the form
+     const serviceData = authResult.service;
+     const responseData = {
+        name: serviceData.name,
+        description: serviceData.description,
+        localPort: serviceData.local_port,
+        subdomain: serviceData.domain, // 'domain' in DB is the frp subdomain
+        frpType: serviceData.type,     // 'type' in DB is the frpType
+        // Other FrpServiceSchema fields can be added if they exist in DB
+     };
+     return NextResponse.json(responseData);
    } catch (error) {
     console.error('Get service error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
