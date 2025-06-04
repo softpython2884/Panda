@@ -16,7 +16,7 @@ interface ServiceConfigData {
   frpType: FrpServiceType;
   localPort: number;
   subdomain: string;
-  remotePort?: number; // Ajouté pour TCP/UDP
+  remotePort?: number;
   useEncryption?: boolean;
   useCompression?: boolean;
 }
@@ -31,19 +31,19 @@ function generatePandaConfigToml(config: ServiceConfigData): string {
 serverPort = ${FRP_SERVER_PORT}
 
 auth.method = "token"
-auth.token = "${FRP_AUTH_TOKEN}" # This token MUST match the one in your Panda Tunnels Server
+auth.token = "${FRP_AUTH_TOKEN}" # Ce token DOIT correspondre à celui de votre Panda Tunnels Server
 
-log.to = "console" # You can change this to a file path e.g., "./pandaclient.log"
-log.level = "info" # Other levels: trace, debug, warn, error
-transport.tls.enable = true # Encrypts communication with the Panda Tunnels Server, recommended.
+log.to = "console" # Peut être changé pour un fichier, ex: "./pandaclient.log"
+log.level = "info" # Autres niveaux: trace, debug, warn, error
+transport.tls.enable = true # Chiffre la communication avec le Panda Tunnels Server (recommandé)
 
 `;
 
   pandaconfigToml += `
 [[proxies]]
-name = "${config.name}" # This is an identifier for the proxy
+name = "${config.name}" # Identifiant du proxy
 type = "${config.frpType}"
-localIP = "127.0.0.1" # Assumes your service runs on the same machine as the Panda Tunnels Client
+localIP = "127.0.0.1" # Suppose que votre service tourne sur la même machine que le Panda Tunnels Client
 localPort = ${config.localPort}
 `;
 
@@ -53,17 +53,16 @@ localPort = ${config.localPort}
     if (config.remotePort) {
       pandaconfigToml += `remotePort = ${config.remotePort}\n`;
     } else {
-      pandaconfigToml += `# IMPORTANT: Remote port is not defined for this TCP/UDP tunnel. \n# You need to configure a remotePort in the PANDA dashboard for this tunnel to work.\n`;
+      pandaconfigToml += `# IMPORTANT: Le port distant n'est pas défini pour ce tunnel TCP/UDP. \n# Configurez un remotePort dans le tableau de bord PANDA pour que ce tunnel fonctionne.\n`;
     }
   } else if (config.frpType === "stcp" || config.frpType === "xtcp") {
-    pandaconfigToml += `# For STCP/XTCP, 'subdomain' might be used by your Panda Tunnels Server configuration for routing.\n`;
-    pandaconfigToml += `# Ensure your server (frps) is configured for this. \n`;
-    pandaconfigToml += `subdomain = "${config.subdomain}" # Often used as a serverName or for routing rules on frps\n`;
-    pandaconfigToml += `# You will likely need a secretKey for STCP/XTCP visitors. Add it here if your server requires it:\n`;
-    pandaconfigToml += `# secretKey = "your_very_secret_key_here"\n`;
+    pandaconfigToml += `# Pour STCP/XTCP, 'subdomain' peut être utilisé par la configuration de votre Panda Tunnels Server pour le routage.\n`;
+    pandaconfigToml += `# Assurez-vous que votre serveur (frps) est configuré pour cela.\n`;
+    pandaconfigToml += `subdomain = "${config.subdomain}" # Souvent utilisé comme serverName ou pour les règles de routage sur le serveur\n`;
+    pandaconfigToml += `# Vous aurez probablement besoin d'une secretKey pour les visiteurs STCP/XTCP. Ajoutez-la ici si votre serveur l'exige:\n`;
+    pandaconfigToml += `# secretKey = "votre_cle_secrete_ici"\n`;
   }
   
-  // Add transport options if defined
   if (config.useEncryption !== undefined) {
     pandaconfigToml += `transport.useEncryption = ${config.useEncryption}\n`;
   }
@@ -132,8 +131,8 @@ export default function ClientConfigPage() {
         }
         return res.json();
       })
-      .then((data: ServiceConfigData) => { // ServiceConfigData now includes remotePort, useEncryption, useCompression
-        if (!data.name || !data.frpType || data.localPort === undefined || !data.subdomain) { // subdomain still key for http/s identity
+      .then((data: ServiceConfigData) => {
+        if (!data.name || !data.frpType || data.localPort === undefined || !data.subdomain) {
             throw new Error('Incomplete service data received from API. Required fields are missing.');
         }
         setServiceConfig(data);
@@ -146,7 +145,7 @@ export default function ClientConfigPage() {
         } else if ((data.frpType === "tcp" || data.frpType === "udp") && data.remotePort) {
             publicAccessInfo = `${FRP_SERVER_ADDR}:${data.remotePort}`;
         } else {
-            publicAccessInfo = `${data.subdomain}.${FRP_SERVER_BASE_DOMAIN} (vérifiez configuration STCP/XTCP)`;
+            publicAccessInfo = `${data.subdomain}.${FRP_SERVER_BASE_DOMAIN} (vérifiez configuration ${data.frpType.toUpperCase()})`;
         }
 
         let batContent = RUN_BAT_CONTENT_TEMPLATE_WINDOWS.replace(/{SERVICE_NAME}/g, data.name);
@@ -175,7 +174,7 @@ export default function ClientConfigPage() {
         });
     } else {
         toast({ title: "Copie non disponible", description: `L'accès au presse-papiers n'est pas disponible dans ce contexte (ex: non-HTTPS). Veuillez copier ${label} manuellement.`, variant: "destructive" });
-        console.warn("navigator.clipboard.writeText is not available.");
+        console.warn("navigator.clipboard.writeText is not available for insecure contexts or if the browser does not support it.");
     }
   };
 
@@ -183,7 +182,7 @@ export default function ClientConfigPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-lg text-muted-foreground">Chargement du guide de configuration du client Panda Tunnels...</p>
+        <p className="text-lg text-muted-foreground">Chargement du guide de configuration du Panda Tunnels Client...</p>
       </div>
     );
   }
@@ -236,8 +235,8 @@ export default function ClientConfigPage() {
             <AlertTriangleIcon className="h-5 w-5" />
             <AlertTitle>Avertissement Antivirus !</AlertTitle>
             <AlertDescription>
-              Le <strong className="text-destructive-foreground">Panda Tunnels Client</strong> (<code className="font-mono bg-destructive-foreground/20 px-1 rounded text-destructive-foreground font-bold">PandaTunnels.exe</code> ou l&apos;équivalent Linux) pourrait être signalé comme un logiciel potentiellement indésirable par certains antivirus.
-              Ceci est courant pour les outils de tunnelisation en raison de leur nature. Assurez-vous de le télécharger depuis les liens officiels fournis et, si nécessaire, ajoutez une exception pour l&apos;exécutable client dans les paramètres de votre antivirus.
+              Le <strong className="text-destructive font-semibold">Panda Tunnels Client</strong> (<code className="font-mono bg-destructive/20 px-1 rounded text-destructive font-bold">PandaTunnels.exe</code> ou l&apos;équivalent Linux) pourrait être signalé comme un logiciel potentiellement indésirable par certains antivirus.
+              Ceci est courant pour les outils de tunnelisation. Assurez-vous de le télécharger depuis les liens officiels fournis et, si nécessaire, ajoutez une exception pour l&apos;exécutable client dans les paramètres de votre antivirus.
             </AlertDescription>
           </Alert>
 
@@ -246,10 +245,10 @@ export default function ClientConfigPage() {
             <AlertTitle>Notes Importantes pour la Configuration</AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Le <code className="font-mono bg-muted px-1 rounded">auth.token</code> dans <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code> (ci-dessous) est crucial. Il <strong>doit correspondre exactement</strong> au token configuré sur votre <strong className="text-primary">Panda Tunnels Server</strong>. PANDA utilise la variable d&apos;environnement <code className="font-mono bg-muted px-1 rounded">FRP_AUTH_TOKEN</code> (par défaut &quot;supersecret&quot; si non définie).</li>
-                <li>Si vous modifiez les paramètres de ce service dans le tableau de bord PANDA (ex: changement de port, sous-domaine), vous <strong>devez</strong> revenir sur cette page, copier le nouveau contenu de <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>, et <strong>redémarrer votre Panda Tunnels Client local</strong> pour que les changements prennent effet.</li>
-                 <li>Assurez-vous que votre service local (ex: serveur web, serveur de jeu) tourne bien sur <code className="font-mono bg-muted px-1 rounded">127.0.0.1:{serviceConfig.localPort}</code> avant de démarrer le tunnel.</li>
-                 <li>Pour une personnalisation avancée du <strong className="text-primary">Panda Tunnels Client</strong> (options non gérées par cette interface PANDA), vous pouvez éditer manuellement ce fichier <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>. Référez-vous à la <a href="https://gofrp.org/docs/examples/client/" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">documentation officielle de <strong>frp</strong> <ExternalLink className="inline h-3 w-3"/></a> pour tous les paramètres disponibles.</li>
+                <li>Le <code className="font-mono bg-muted px-1 rounded">auth.token</code> dans <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code> (ci-dessous) est crucial. Il <strong className="font-semibold">doit correspondre exactement</strong> au token configuré sur votre <strong className="text-primary">Panda Tunnels Server</strong>. PANDA utilise la variable d&apos;environnement <code className="font-mono bg-muted px-1 rounded">FRP_AUTH_TOKEN</code> (par défaut &quot;supersecret&quot; si non définie).</li>
+                <li>Si vous modifiez les paramètres de ce service dans le tableau de bord PANDA, vous <strong className="font-semibold">devez</strong> revenir sur cette page, copier le nouveau contenu de <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>, et <strong className="font-semibold">redémarrer votre Panda Tunnels Client local</strong> pour que les changements prennent effet.</li>
+                 <li>Assurez-vous que votre service local tourne bien sur <code className="font-mono bg-muted px-1 rounded">127.0.0.1:{serviceConfig.localPort}</code> avant de démarrer le tunnel.</li>
+                 <li>Pour une personnalisation avancée du <strong className="text-primary">Panda Tunnels Client</strong> (options non gérées par cette interface PANDA), vous pouvez éditer manuellement ce fichier <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>. Référez-vous à la <a href="https://gofrp.org/docs/examples/client/" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">documentation officielle de <strong className="font-semibold">frp</strong> <ExternalLink className="inline h-3 w-3"/></a> pour tous les paramètres disponibles.</li>
                  <li>Les modifications dans PANDA mettent à jour la configuration de référence. Elles ne contrôlent pas directement les instances de <strong className="text-primary">Panda Tunnels Client</strong> ou <strong className="text-primary">Panda Tunnels Server</strong> en cours d&apos;exécution. Un redémarrage du client avec la configuration mise à jour est nécessaire.</li>
               </ul>
             </AlertDescription>
@@ -275,10 +274,10 @@ export default function ClientConfigPage() {
                 </Button>
             </div>
              <p className="text-xs text-muted-foreground mt-2">
-                <strong>Utilisateurs Linux :</strong> Après avoir téléchargé le <code className="font-mono bg-muted px-1 rounded">.tar.gz</code>, extrayez son contenu. Vous trouverez plusieurs fichiers. Vous n&apos;avez besoin que du binaire <code className="font-mono bg-muted px-1 rounded">frpc</code> (qui est le <strong className="text-primary">Panda Tunnels Client</strong>). Vous pouvez le renommer en <code className="font-mono bg-muted px-1 rounded">PandaTunnelsClient</code> si vous le souhaitez. Supprimez tous les fichiers liés à <code className="font-mono bg-muted px-1 rounded">frps</code> (le <strong className="text-primary">Panda Tunnels Server</strong>) de l&apos;archive extraite car ils ne sont pas nécessaires pour le client. Rendez le binaire client exécutable (<code className="font-mono bg-muted px-1 rounded">chmod +x ./PandaTunnelsClient</code> ou <code className="font-mono bg-muted px-1 rounded">chmod +x ./frpc</code>).
+                <strong className="font-semibold">Utilisateurs Linux :</strong> Après avoir téléchargé le <code className="font-mono bg-muted px-1 rounded">.tar.gz</code>, extrayez son contenu. Vous trouverez plusieurs fichiers. Vous n&apos;avez besoin que du binaire <code className="font-mono bg-muted px-1 rounded">frpc</code> (qui est le <strong className="text-primary">Panda Tunnels Client</strong>). Vous pouvez le renommer en <code className="font-mono bg-muted px-1 rounded">PandaTunnelsClient</code> si vous le souhaitez. Supprimez tous les fichiers liés à <code className="font-mono bg-muted px-1 rounded">frps</code> (le <strong className="text-primary">Panda Tunnels Server</strong>) de l&apos;archive extraite car ils ne sont pas nécessaires pour le client. Rendez le binaire client exécutable (<code className="font-mono bg-muted px-1 rounded">chmod +x ./PandaTunnelsClient</code> ou <code className="font-mono bg-muted px-1 rounded">chmod +x ./frpc</code>).
              </p>
             <p className="text-xs text-muted-foreground">
-                <strong>Utilisateurs macOS :</strong> Un <strong className="text-primary">Panda Tunnels Client</strong> pré-compilé pour macOS n&apos;est pas fourni actuellement. Vous pourriez compiler le client depuis les sources <code className="font-mono bg-muted px-1 rounded">frp</code> ou trouver des binaires compatibles sur la <a href={FRP_OFFICIAL_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">page officielle des releases <strong className="text-primary">frp</strong> <ExternalLink className="inline h-3 w-3"/></a>.
+                <strong className="font-semibold">Utilisateurs macOS :</strong> Un <strong className="text-primary">Panda Tunnels Client</strong> pré-compilé pour macOS n&apos;est pas fourni actuellement. Vous pourriez compiler le client depuis les sources <code className="font-mono bg-muted px-1 rounded">frp</code> ou trouver des binaires compatibles sur la <a href={FRP_OFFICIAL_RELEASES_URL} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-accent">page officielle des releases <strong className="font-semibold">frp</strong> <ExternalLink className="inline h-3 w-3"/></a>.
             </p>
           </div>
 
@@ -323,10 +322,10 @@ export default function ClientConfigPage() {
           <div className="space-y-2">
             <h3 className="text-xl font-semibold">Étape 4 : Lancer le Tunnel</h3>
             <p className="text-sm text-muted-foreground">
-             <strong>Windows :</strong> Assurez-vous que <code className="font-mono bg-muted px-1 rounded text-primary">PandaTunnels.exe</code>, <code className="font-mono bg-muted px-1 rounded text-primary">pandaconfig.toml</code>, et <code className="font-mono bg-muted px-1 rounded text-primary">run.bat</code> sont tous dans le même dossier. Ensuite, double-cliquez simplement sur <code className="font-mono bg-muted px-1 rounded text-primary">run.bat</code> pour démarrer votre Panda Tunnel.
+             <strong className="font-semibold">Windows :</strong> Assurez-vous que <code className="font-mono bg-muted px-1 rounded text-primary">PandaTunnels.exe</code>, <code className="font-mono bg-muted px-1 rounded text-primary">pandaconfig.toml</code>, et <code className="font-mono bg-muted px-1 rounded text-primary">run.bat</code> sont tous dans le même dossier. Ensuite, double-cliquez simplement sur <code className="font-mono bg-muted px-1 rounded text-primary">run.bat</code> pour démarrer votre Panda Tunnel.
             </p>
              <p className="text-sm text-muted-foreground">
-              <strong>Linux :</strong> Naviguez vers le dossier dans votre terminal. Lancez le client en utilisant la commande : <code className="font-mono bg-muted px-1 rounded text-primary">./PandaTunnelsClient -c ./pandaconfig.toml</code> (ou <code className="font-mono bg-muted px-1 rounded text-primary">./frpc -c ./pandaconfig.toml</code> si vous avez gardé le nom original du binaire).
+              <strong className="font-semibold">Linux :</strong> Naviguez vers le dossier dans votre terminal. Lancez le client en utilisant la commande : <code className="font-mono bg-muted px-1 rounded text-primary">./PandaTunnelsClient -c ./pandaconfig.toml</code> (ou <code className="font-mono bg-muted px-1 rounded text-primary">./frpc -c ./pandaconfig.toml</code> si vous avez gardé le nom original du binaire).
              </p>
             <p className="text-sm text-muted-foreground mt-1">
               Une fenêtre de terminal s&apos;ouvrira et affichera l&apos;état du tunnel et les logs. Gardez cette fenêtre ouverte aussi longtemps que vous souhaitez que votre tunnel soit actif.
