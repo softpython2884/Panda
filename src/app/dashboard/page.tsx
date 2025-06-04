@@ -18,14 +18,13 @@ interface RecentService {
 export default function DashboardOverviewPage() {
   const { user } = useAuth();
   const [recentTunnels, setRecentTunnels] = useState<RecentService[]>([]);
-  const [isLoadingTunnels, setIsLoadingTunnels] = useState(false); // Add loading state
+  const [isLoadingTunnels, setIsLoadingTunnels] = useState(false); 
 
   useEffect(() => {
     async function fetchRecentTunnels() {
       if (!user) return;
       setIsLoadingTunnels(true);
       try {
-        // Fetch up to 3 recent services
         const response = await fetch('/api/dashboard/services?limit=3'); 
         if (response.ok) {
           const data = await response.json();
@@ -42,12 +41,19 @@ export default function DashboardOverviewPage() {
     fetchRecentTunnels();
   }, [user]);
 
-  const capitalizeFirstLetter = (string?: string) => {
+  const capitalizeFirstLetter = (string?: string | null) => {
     if (!string) return "";
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
-  const displayName = user ? capitalizeFirstLetter(user.username) || capitalizeFirstLetter(user.email) : "";
+  const getDisplayName = () => {
+    if (!user) return "";
+    if (user.firstName) return capitalizeFirstLetter(user.firstName);
+    if (user.username) return capitalizeFirstLetter(user.username);
+    return capitalizeFirstLetter(user.email);
+  };
+  
+  const displayName = getDisplayName();
 
   return (
     <div className="space-y-10">

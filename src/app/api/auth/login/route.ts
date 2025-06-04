@@ -4,7 +4,7 @@ import { UserLoginSchema } from '@/lib/schemas';
 import { ZodError } from 'zod';
 import { serialize } from 'cookie';
 
-const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002'; // Assuming default for scaffold. Adjust if Pod is on same instance.
+const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: podData.error || 'Login failed at Pod' }, { status: podResponse.status });
     }
 
-    const { token, user } = podData;
+    const { token, user } = podData; // 'user' should now be the full user object from Pod
 
     // Set HttpOnly cookie
     const cookie = serialize('panda_session_token', token, {
@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 1 week
     });
 
-    const response = NextResponse.json({ message: 'Login successful', user });
+    // The user object returned here now contains username, firstName, lastName, role
+    const response = NextResponse.json({ message: 'Login successful', user }); 
     response.headers.set('Set-Cookie', cookie);
     return response;
 

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react'; // Added React import
+import React from 'react';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -43,15 +43,17 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           return null; 
       }
 
+      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+      
       const LinkComponent = (
         <Button
           key={item.title}
-          variant={pathname.startsWith(item.href) ? "default" : "ghost"}
+          variant={isActive ? "default" : "ghost"}
           className={cn(
             "w-full justify-start text-base py-3 sm:py-2 sm:text-sm",
-            pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+            isActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
             item.disabled && "opacity-50 cursor-not-allowed",
-            item.adminOnly && user?.role === 'ADMIN' && pathname.startsWith(item.href) && "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            item.adminOnly && user?.role === 'ADMIN' && isActive && "bg-destructive text-destructive-foreground hover:bg-destructive/90"
           )}
           asChild={!item.disabled}
           disabled={item.disabled}
