@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, type FrpServiceInput, FRP_SERVER_ADDR } from '@/lib/schemas';
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, FRP_SERVER_ADDR, type FrpServiceInput } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
@@ -51,33 +51,35 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     let generated_public_url: string;
     const effectiveBaseDomain = PANDA_TUNNEL_MAIN_HOST || FRP_SERVER_BASE_DOMAIN;
 
-    if (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp') {
-        generated_public_url = `http://${subdomain}.${effectiveBaseDomain}`;
-         if (frpType === 'https') {
-             generated_public_url = `https://${subdomain}.${effectiveBaseDomain}`;
-        }
+    if (frpType === 'http' || frpType === 'https') {
+        generated_public_url = `http${frpType === 'https' ? 's' : ''}://${subdomain}.${effectiveBaseDomain}`;
     } else if ((frpType === 'tcp' || frpType === 'udp') && remotePort) {
         generated_public_url = `${FRP_SERVER_ADDR}:${remotePort}`;
+    } else if (frpType === 'stcp' || frpType === 'xtcp') {
+        generated_public_url = `${subdomain}.${effectiveBaseDomain} (via STCP/XTCP - voir config client)`;
     } else {
         generated_public_url = `Configuration Incomplete - ${subdomain}.${effectiveBaseDomain}`;
     }
         
     const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
-    // Check for uniqueness of subdomain or remotePort if they changed
     if (subdomain !== authResult.service.domain && (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp')) { 
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(subdomain, serviceId);
         if (existingDomain) {
             return NextResponse.json({ error: 'New subdomain already registered by another service' }, { status: 409 });
         }
     }
-    if (remotePort !== authResult.service.remote_port && (frpType === 'tcp' || frpType === 'udp') && remotePort) {
+    const currentDbRemotePort = authResult.service.remote_port;
+    if (remotePort !== currentDbRemotePort && (frpType === 'tcp' || frpType === 'udp') && remotePort) {
         const existingRemotePort = db.prepare('SELECT id FROM services WHERE remote_port = ? AND frp_type IN (?, ?) AND id != ?').get(remotePort, 'tcp', 'udp', serviceId);
         if (existingRemotePort) {
             return NextResponse.json({ error: `New remote port ${remotePort} is already in use for a TCP/UDP tunnel. Please choose another.` }, { status: 409 });
         }
     }
 
+    const dbRemotePort = (frpType === 'tcp' || frpType === 'udp') && remotePort ? remotePort : null;
+    const dbUseEncryption = useEncryption === true ? 1 : 0;
+    const dbUseCompression = useCompression === true ? 1 : 0;
 
     db.prepare(
       `UPDATE services 
@@ -92,9 +94,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         frpType,   
         localPort,
         frpType,   
-        (frpType === 'tcp' || frpType === 'udp') ? remotePort : null,
-        useEncryption,
-        useCompression,
+        dbRemotePort,
+        dbUseEncryption,
+        dbUseCompression,
         serviceId, 
         authResult.userId
     );
@@ -128,7 +130,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     db.prepare('DELETE FROM services WHERE id = ? AND user_id = ?').run(serviceId, authResult.userId);
-    return NextResponse.json({ message: 'Service deleted successfully' });
+    // FRP ne permet pas la suppression dynamique de proxies via une API simple par défaut.
+    // Il faudrait un mécanisme de rechargement de la configuration de frps, ou une gestion via l'API admin de frps si activée.
+    // Pour l'instant, PANDA supprime juste l'enregistrement.
+    return NextResponse.json({ message: 'Service deleted successfully from PANDA. You may need to manually update/restart your Panda Tunnels Server (frps) if it was configured statically.' });
 
   } catch (error) {
     console.error('Service deletion error:', error);
@@ -145,16 +150,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
      
      const serviceData = authResult.service;
-     // Ensure the response matches FrpServiceInput for consistency in EditForm
      const responseData: FrpServiceInput = {
         name: serviceData.name,
         description: serviceData.description,
-        localPort: serviceData.local_port, 
+        localPort: Number(serviceData.local_port), 
         subdomain: serviceData.domain, 
-        frpType: serviceData.type as FrpServiceInput['frpType'], // 'type' in DB is frpType
-        remotePort: serviceData.remote_port, // Ensure this is passed
-        useEncryption: serviceData.use_encryption,
-        useCompression: serviceData.use_compression,
+        frpType: serviceData.type as FrpServiceInput['frpType'],
+        remotePort: serviceData.remote_port === null ? undefined : Number(serviceData.remote_port),
+        useEncryption: Boolean(serviceData.use_encryption), // Convert 0/1 from DB to boolean
+        useCompression: Boolean(serviceData.use_compression), // Convert 0/1 from DB to boolean
      };
      return NextResponse.json(responseData);
    } catch (error) {
@@ -162,6 +166,3 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-
-    

@@ -19,7 +19,7 @@ import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_D
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, AlertTriangleIcon, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Save, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
@@ -42,7 +41,6 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
 
   const form = useForm<FrpServiceInput>({
@@ -68,21 +66,13 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
         }
         return res.json();
       })
-      .then((data: FrpServiceInput & { remote_port?: number, use_encryption?: boolean, use_compression?: boolean }) => {
-        // API might return remote_port, use_encryption etc. with underscores
-        const remotePortValue = data.remotePort ?? data.remote_port;
-        const useEncryptionValue = data.useEncryption ?? data.use_encryption ?? true;
-        const useCompressionValue = data.useCompression ?? data.use_compression ?? false;
-
+      .then((data: FrpServiceInput ) => { // API returns data matching FrpServiceInput
         form.reset({
-            name: data.name || "",
-            description: data.description || "",
+            ...data,
             localPort: data.localPort === undefined || data.localPort === null ? '' : String(data.localPort),
-            subdomain: data.subdomain || "",
-            frpType: frpServiceTypes.includes(data.frpType) ? data.frpType : "http",
-            remotePort: remotePortValue === undefined || remotePortValue === null ? undefined : Number(remotePortValue),
-            useEncryption: useEncryptionValue,
-            useCompression: useCompressionValue,
+            remotePort: data.remotePort === undefined || data.remotePort === null ? undefined : Number(data.remotePort),
+            useEncryption: data.useEncryption === undefined ? true : data.useEncryption,
+            useCompression: data.useCompression === undefined ? false : data.useCompression,
         });
       })
       .catch(err => {
@@ -98,7 +88,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
       const payload = {
         ...values,
         localPort: Number(values.localPort),
-        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') ? Number(values.remotePort) : undefined,
+        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') && values.remotePort ? Number(values.remotePort) : undefined,
         useEncryption: values.useEncryption,
         useCompression: values.useCompression,
       };
@@ -131,11 +121,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
 
   const publicUrlPreview = 
     (frpTypeValue === 'http' || frpTypeValue === 'https') && currentSubdomain
-    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}`
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN || '[BASE DOMAIN NOT SET]'}`
     : (frpTypeValue === 'tcp' || frpTypeValue === 'udp') && currentRemotePort
-    ? `${FRP_SERVER_ADDR}:${currentRemotePort}`
+    ? `${FRP_SERVER_ADDR || '[SERVER ADDR NOT SET]'}:${currentRemotePort}`
     : (frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && currentSubdomain
-    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN} (pour STCP/XTCP, configuration serveur spécifique requise)`
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN || '[BASE DOMAIN NOT SET]'} (pour STCP/XTCP, configuration serveur spécifique requise)`
     : `(Configurez type et accès)`;
 
 
@@ -158,6 +148,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
             Après avoir sauvegardé les changements ici, l&apos;enregistrement de votre service PANDA est mis à jour.
             Ces changements ne sont <strong>pas automatiquement appliqués</strong> à votre <code className="font-mono bg-muted px-1 rounded">Panda Tunnels Client</code> en cours d&apos;exécution.
             <br />Vous <strong>devez</strong> aller sur la page &quot;Obtenir la Configuration&quot; pour ce service (depuis le tableau de bord), obtenir le nouveau contenu du fichier <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>, mettre à jour votre fichier local, puis <strong>redémarrer votre <code className="font-mono bg-muted px-1 rounded">Panda Tunnels Client</code></strong> pour que les nouveaux paramètres prennent effet.
+            <br />Les utilisateurs avancés peuvent aussi directement éditer leur <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code> local pour des options non gérées par cette interface, en consultant la documentation officielle de <strong className="text-primary">frp</strong>.
           </AlertDescription>
         </Alert>
 
@@ -200,8 +191,8 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                     type="number"
                     placeholder="ex: 3000 ou 25565"
                     {...field}
+                    onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
                     value={field.value === undefined || field.value === null ? '' : String(field.value)}
-                    onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
                 <FormDescription>Le port sur lequel votre service tourne localement.</FormDescription>
@@ -270,8 +261,8 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                         type="number" 
                         placeholder="ex: 7001 (doit être unique sur le serveur)" 
                         {...field}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
                         value={field.value === undefined || field.value === null ? '' : String(field.value)}
-                        onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                     />
                     </FormControl>
                     <FormDescription>
@@ -285,7 +276,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
 
         <Accordion type="single" collapsible className="w-full" defaultValue={ (form.getValues("useEncryption") !== true || form.getValues("useCompression") !== false) ? "advanced-settings" : undefined }>
           <AccordionItem value="advanced-settings">
-            <AccordionTrigger onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-medium">
+            <AccordionTrigger className="text-sm font-medium">
                 Paramètres Avancés
             </AccordionTrigger>
             <AccordionContent className="pt-4 space-y-6">
@@ -302,11 +293,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <Label htmlFor="useEncryptionEdit" className="cursor-pointer">
-                        Activer l&apos;Encryption
-                      </Label>
+                      <FormLabel htmlFor="useEncryptionEdit" className="cursor-pointer">
+                        Activer l&apos;Encryption du tunnel (Client &lt;-&gt; Serveur Panda Tunnels)
+                      </FormLabel>
                       <FormDescription>
-                        Chiffre les données entre le client et le serveur Panda Tunnels (recommandé).
+                        Chiffre les données entre le Panda Tunnels Client et le Panda Tunnels Server (recommandé). Affecte `transport.useEncryption` dans `pandaconfig.toml`.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -325,11 +316,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <Label htmlFor="useCompressionEdit" className="cursor-pointer">
-                        Activer la Compression
-                      </Label>
+                      <FormLabel htmlFor="useCompressionEdit" className="cursor-pointer">
+                        Activer la Compression du tunnel (Client &lt;-&gt; Serveur Panda Tunnels)
+                      </FormLabel>
                       <FormDescription>
-                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU.
+                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU. Affecte `transport.useCompression` dans `pandaconfig.toml`.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -348,6 +339,3 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     </Form>
   );
 }
-
-
-    

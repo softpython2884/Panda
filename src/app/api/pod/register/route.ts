@@ -31,19 +31,20 @@ export async function POST(request: NextRequest) {
     let generated_public_url: string;
     const effectiveBaseDomain = PANDA_TUNNEL_MAIN_HOST || FRP_SERVER_BASE_DOMAIN;
 
-    if (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp') {
-        generated_public_url = `http://${subdomain}.${effectiveBaseDomain}`; // HTTPS if frpType is https and TLS termination is on frps
-        if (frpType === 'https') {
-             generated_public_url = `https://${subdomain}.${effectiveBaseDomain}`;
-        }
+    if (frpType === 'http' || frpType === 'https') {
+        generated_public_url = `http${frpType === 'https' ? 's' : ''}://${subdomain}.${effectiveBaseDomain}`;
     } else if ((frpType === 'tcp' || frpType === 'udp') && remotePort) {
         generated_public_url = `${FRP_SERVER_ADDR}:${remotePort}`;
-    } else {
-        // Fallback or error for TCP/UDP without remotePort, though schema should prevent this
+    } else if (frpType === 'stcp' || frpType === 'xtcp') {
+        // For STCP/XTCP, the public URL might be more informational if a specific port isn't exposed directly by frps for these types via subdomain alone.
+        // The client typically binds to a local port to access the STCP/XTCP service.
+        // We can still construct a domain-based URL for informational purposes.
+        generated_public_url = `${subdomain}.${effectiveBaseDomain} (via STCP/XTCP - voir config client)`;
+    }
+     else {
         generated_public_url = `Configuration Incomplete - ${subdomain}.${effectiveBaseDomain}`;
     }
     
-    // Check for uniqueness of subdomain (for http/https/stcp/xtcp) or remotePort (for tcp/udp)
     if (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp') {
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ?').get(subdomain);
         if (existingDomain) {
@@ -57,8 +58,10 @@ export async function POST(request: NextRequest) {
     }
     
     const serviceId = crypto.randomUUID();
-    // local_url is legacy, store main connection info in discrete fields
     const legacy_local_url_info = `127.0.0.1:${localPort}`; 
+    const dbRemotePort = (frpType === 'tcp' || frpType === 'udp') && remotePort ? remotePort : null;
+    const dbUseEncryption = useEncryption === true ? 1 : 0;
+    const dbUseCompression = useCompression === true ? 1 : 0;
 
     db.prepare(
       `INSERT INTO services (id, user_id, name, description, local_url, public_url, domain, type, local_port, frp_type, remote_port, use_encryption, use_compression) 
@@ -70,13 +73,13 @@ export async function POST(request: NextRequest) {
         description, 
         legacy_local_url_info, 
         generated_public_url, 
-        subdomain, // Storing subdomain for all types for consistency, even if not used for URL generation by some
-        frpType,   // 'type' column now stores frpType
+        subdomain, 
+        frpType,   
         localPort,
-        frpType,   // 'frp_type' column also stores frpType
-        (frpType === 'tcp' || frpType === 'udp') ? remotePort : null,
-        useEncryption,
-        useCompression
+        frpType,   
+        dbRemotePort,
+        dbUseEncryption,
+        dbUseCompression
     );
 
     const newService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
@@ -92,13 +95,10 @@ export async function POST(request: NextRequest) {
         if (error.message.includes('UNIQUE constraint failed: services.domain')) {
             return NextResponse.json({ error: 'Subdomain already registered. Please choose a unique subdomain.' }, { status: 409 });
         }
-        if (error.message.includes('UNIQUE constraint failed: services.remote_port')) { // Assuming you add a unique constraint on remote_port for tcp/udp
+        if (error.message.includes('UNIQUE constraint failed: services.remote_port')) {
             return NextResponse.json({ error: 'Remote port already in use. Please choose a unique remote port for TCP/UDP tunnels.' }, { status: 409 });
         }
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-
-    

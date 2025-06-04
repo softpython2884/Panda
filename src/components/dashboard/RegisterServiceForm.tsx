@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_DOMAIN } from "@/lib/schemas";
+import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_DOMAIN, FRP_SERVER_ADDR } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Settings2, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Settings2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
@@ -36,17 +35,16 @@ export default function RegisterServiceForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const form = useForm<FrpServiceInput>({
     resolver: zodResolver(ServiceSchema),
     defaultValues: {
       name: "",
       description: "",
-      localPort: '' as any, 
+      localPort: '' as any, // Initialize as empty string for controlled input
       subdomain: "",
       frpType: "http",
-      remotePort: undefined, // Default to undefined
+      remotePort: undefined, // Default to undefined, Zod handles required for TCP/UDP
       useEncryption: true,
       useCompression: false,
     },
@@ -58,11 +56,11 @@ export default function RegisterServiceForm() {
 
   const publicUrlPreview = 
     (frpTypeValue === 'http' || frpTypeValue === 'https') && currentSubdomain
-    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}`
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN || '[BASE DOMAIN NOT SET]'}`
     : (frpTypeValue === 'tcp' || frpTypeValue === 'udp') && currentRemotePort
-    ? `${FRP_SERVER_ADDR}:${currentRemotePort}`
+    ? `${FRP_SERVER_ADDR || '[SERVER ADDR NOT SET]'}:${currentRemotePort}`
     : (frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && currentSubdomain
-    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN} (pour STCP/XTCP, configuration serveur spécifique requise)`
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN || '[BASE DOMAIN NOT SET]'} (pour STCP/XTCP, configuration serveur spécifique requise)`
     : `(Configurez type et accès)`;
 
 
@@ -71,8 +69,8 @@ export default function RegisterServiceForm() {
     try {
       const payload = {
         ...values,
-        localPort: Number(values.localPort),
-        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') ? Number(values.remotePort) : undefined,
+        localPort: Number(values.localPort), // Already handled by preprocess in Zod
+        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') && values.remotePort ? Number(values.remotePort) : undefined,
         useEncryption: values.useEncryption,
         useCompression: values.useCompression,
       };
@@ -139,8 +137,8 @@ export default function RegisterServiceForm() {
                     type="number"
                     placeholder="ex: 3000 ou 25565"
                     {...field}
+                    onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} // Ensure undefined if empty
                     value={field.value === undefined || field.value === null ? '' : String(field.value)}
-                    onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
                 <FormDescription>Le port sur lequel votre service tourne localement (ex: `80`, `3000`, `25565`).</FormDescription>
@@ -209,8 +207,8 @@ export default function RegisterServiceForm() {
                         type="number" 
                         placeholder="ex: 7001 (doit être unique sur le serveur)" 
                         {...field}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
                         value={field.value === undefined || field.value === null ? '' : String(field.value)}
-                        onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                     />
                     </FormControl>
                     <FormDescription>
@@ -224,7 +222,7 @@ export default function RegisterServiceForm() {
         
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="advanced-settings">
-            <AccordionTrigger onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-medium">
+            <AccordionTrigger className="text-sm font-medium">
                 Paramètres Avancés
             </AccordionTrigger>
             <AccordionContent className="pt-4 space-y-6">
@@ -237,14 +235,15 @@ export default function RegisterServiceForm() {
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        id="useEncryption"
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel htmlFor="useEncryption">
-                        Activer l&apos;Encryption
+                      <FormLabel htmlFor="useEncryption" className="cursor-pointer">
+                        Activer l&apos;Encryption du tunnel (Client &lt;-&gt; Serveur Panda Tunnels)
                       </FormLabel>
                       <FormDescription>
-                        Chiffre les données entre le client et le serveur Panda Tunnels (recommandé).
+                        Chiffre les données entre le Panda Tunnels Client et le Panda Tunnels Server (recommandé). Affecte `transport.useEncryption` dans `pandaconfig.toml`.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -259,14 +258,15 @@ export default function RegisterServiceForm() {
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        id="useCompression"
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel htmlFor="useCompression">
-                        Activer la Compression
+                      <FormLabel htmlFor="useCompression" className="cursor-pointer">
+                        Activer la Compression du tunnel (Client &lt;-&gt; Serveur Panda Tunnels)
                       </FormLabel>
                       <FormDescription>
-                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU.
+                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU. Affecte `transport.useCompression` dans `pandaconfig.toml`.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -286,6 +286,3 @@ export default function RegisterServiceForm() {
     </Form>
   );
 }
-
-
-    
