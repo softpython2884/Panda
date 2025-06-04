@@ -23,6 +23,10 @@ export const FRP_SERVER_PORT = parseInt(process.env.NEXT_PUBLIC_FRP_SERVER_PORT 
 export const FRP_AUTH_TOKEN = process.env.FRP_AUTH_TOKEN || "supersecret"; 
 export const FRP_SERVER_BASE_DOMAIN = process.env.NEXT_PUBLIC_FRP_SERVER_BASE_DOMAIN || "panda.nationquest.fr";
 
+// This will be read from the server environment. If not set, it will be undefined.
+// API routes will use this to determine if a custom tunnel host is configured.
+export const PANDA_TUNNEL_MAIN_HOST = process.env.PANDA_TUNNEL_MAIN_HOST;
+
 
 export const frpServiceTypes = ["http", "https", "tcp", "udp", "stcp", "xtcp"] as const;
 export type FrpServiceType = (typeof frpServiceTypes)[number];
@@ -38,9 +42,8 @@ export const FrpServiceSchema = z.object({
   subdomain: z.string().min(3, "Subdomain must be at least 3 characters long")
     .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "Invalid subdomain format. Use lowercase letters, numbers, and hyphens. Example: 'mycoolservice' not 'mycoolservice.panda.nationquest.fr'"),
   frpType: z.enum(frpServiceTypes, {
-    // REMOVED: required_error: "Tunnel type is required.",
     errorMap: (issue, ctx) => {
-      if (issue.code === 'invalid_type' && issue.expected === 'union') { // More general for missing enum
+      if (issue.code === 'invalid_type' && issue.expected === 'union') { 
         return { message: 'Tunnel type is required and must be selected from the list.' };
       }
       if (issue.code === 'invalid_enum_value') {
@@ -49,11 +52,6 @@ export const FrpServiceSchema = z.object({
       return { message: ctx.defaultError };
     },
   }),
-  // Future advanced frp settings can be added here. Example:
-  // useEncryption: z.boolean().optional().default(false),
-  // useCompression: z.boolean().optional().default(false),
-  // customHttpHostHeaderRewrite: z.string().optional(),
-  // customHttpLocations: z.string().optional(),
 });
 
 

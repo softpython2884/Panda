@@ -49,19 +49,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { name, description, localPort, subdomain, frpType } = validationResult.data;
     
     let generated_public_url: string;
-    if (PANDA_TUNNEL_MAIN_HOST) {
+    if (PANDA_TUNNEL_MAIN_HOST) { // PANDA_TUNNEL_MAIN_HOST is now correctly imported and can be undefined
       generated_public_url = `http://${subdomain}.${PANDA_TUNNEL_MAIN_HOST}`;
     } else {
-      // Fallback or error if public_url is expected to be generated but host is not set
-      // For now, this path assumes public_url would have been part of FrpServiceInput if PANDA_TUNNEL_MAIN_HOST is not set
-      // However, our current FrpServiceSchema doesn't include a manual public_url field.
-      // This implies PANDA_TUNNEL_MAIN_HOST *should* be set for FrpServiceSchema usage.
-      // If we need to support manual public_url alongside frp types, schema would need adjustment.
-      // Sticking to generation:
-      generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`; // Defaulting if PANDA_TUNNEL_MAIN_HOST somehow missed
-      console.warn("PANDA_TUNNEL_MAIN_HOST is not set, public_url generation might be inconsistent for FrpServiceSchema.");
+      // Fallback if PANDA_TUNNEL_MAIN_HOST is not set in environment
+      generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`; 
+      console.warn(`PANDA_TUNNEL_MAIN_HOST environment variable is not set. Falling back to FRP_SERVER_BASE_DOMAIN for public URL generation: ${generated_public_url}`);
     }
-    
+        
     const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
     if (subdomain !== authResult.service.domain) { 
@@ -129,12 +124,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
      
      const serviceData = authResult.service;
-     const responseData = {
+     // Ensure the response matches FrpServiceInput for consistency in EditForm
+     const responseData: FrpServiceInput = {
         name: serviceData.name,
         description: serviceData.description,
-        localPort: serviceData.local_port,
+        localPort: serviceData.local_port, // This should be a number
         subdomain: serviceData.domain, 
-        frpType: serviceData.type,     
+        frpType: serviceData.type as FrpServiceType, // Cast if 'type' could be broader      
      };
      return NextResponse.json(responseData);
    } catch (error) {

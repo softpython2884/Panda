@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes } from '@/lib/schemas'; // ServiceSchema is FrpServiceSchema
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes, PANDA_TUNNEL_MAIN_HOST } from '@/lib/schemas'; // ServiceSchema is FrpServiceSchema
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
@@ -28,29 +28,21 @@ export async function POST(request: NextRequest) {
     
     const { name, description, localPort, subdomain, frpType } = validationResult.data;
     
-    // Construct public_url for frp service
-    // For http/https, it's subdomain.BASE_DOMAIN
-    // For tcp/udp, it might be BASE_DOMAIN:remote_port, but user requested subdomain for all.
-    // We will assume frps is configured to handle subdomains for all types or specific ports per subdomain.
-    const generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`;
-    // Note: For TCP/UDP, this URL might not be directly browsable but serves as an identifier.
-    // The actual connection would be {subdomain}.{FRP_SERVER_BASE_DOMAIN} which resolves to frps IP,
-    // and frps then routes based on its config for that subdomain to the correct frpc.
-    // If frps needs a specific remote_port for TCP/UDP for that subdomain, that's an frps config.
-
+    let generated_public_url: string;
+    if (PANDA_TUNNEL_MAIN_HOST) { // PANDA_TUNNEL_MAIN_HOST is now correctly imported and can be undefined
+      generated_public_url = `http://${subdomain}.${PANDA_TUNNEL_MAIN_HOST}`;
+    } else {
+      // Fallback if PANDA_TUNNEL_MAIN_HOST is not set in environment
+      generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`; 
+      console.warn(`PANDA_TUNNEL_MAIN_HOST environment variable is not set. Falling back to FRP_SERVER_BASE_DOMAIN for public URL generation: ${generated_public_url}`);
+    }
+    
     const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ?').get(subdomain);
     if (existingDomain) {
       return NextResponse.json({ error: 'Subdomain already registered. Please choose a unique subdomain.' }, { status: 409 });
     }
     
     const serviceId = crypto.randomUUID();
-
-    // Storing frp specific data
-    // 'domain' column will store the frp 'subdomain'
-    // 'type' column will store the 'frpType'
-    // 'local_port' column stores 'localPort'
-    // 'public_url' stores the generated one.
-    // 'local_url' (legacy) can be null or store "127.0.0.1:{localPort}" for informational purposes.
     const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
     db.prepare(
@@ -61,12 +53,12 @@ export async function POST(request: NextRequest) {
         userId, 
         name, 
         description, 
-        legacy_local_url_info, // Store informational local URL
+        legacy_local_url_info, 
         generated_public_url, 
-        subdomain, // Storing frp_subdomain in 'domain' column
-        frpType,   // Storing frp_type in 'type' column
+        subdomain, 
+        frpType,   
         localPort,
-        frpType    // Storing frp_type also in 'frp_type' column for clarity if needed
+        frpType    
     );
 
     const newService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
