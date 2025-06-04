@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes } from '@/lib/schemas'; // ServiceSchema is FrpServiceSchema
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes, PANDA_TUNNEL_MAIN_HOST } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
@@ -32,7 +32,7 @@ async function authorizeAndGetService(request: NextRequest, serviceId: string) {
 
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
+  const serviceId: string = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
     if (authResult.error || !authResult.service || !authResult.userId) { 
@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     
     const body = await request.json();
-    const validationResult = ServiceSchema.safeParse(body); // ServiceSchema is FrpServiceSchema
+    const validationResult = ServiceSchema.safeParse(body);
 
     if (!validationResult.success) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
@@ -48,10 +48,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     
     const { name, description, localPort, subdomain, frpType } = validationResult.data;
     
-    const generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`;
+    let generated_public_url: string;
+    if (PANDA_TUNNEL_MAIN_HOST) {
+      generated_public_url = `http://${subdomain}.${PANDA_TUNNEL_MAIN_HOST}`;
+    } else {
+      // Fallback or error if public_url is expected to be generated but host is not set
+      // For now, this path assumes public_url would have been part of FrpServiceInput if PANDA_TUNNEL_MAIN_HOST is not set
+      // However, our current FrpServiceSchema doesn't include a manual public_url field.
+      // This implies PANDA_TUNNEL_MAIN_HOST *should* be set for FrpServiceSchema usage.
+      // If we need to support manual public_url alongside frp types, schema would need adjustment.
+      // Sticking to generation:
+      generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`; // Defaulting if PANDA_TUNNEL_MAIN_HOST somehow missed
+      console.warn("PANDA_TUNNEL_MAIN_HOST is not set, public_url generation might be inconsistent for FrpServiceSchema.");
+    }
+    
     const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
-    if (subdomain !== authResult.service.domain) { // 'domain' column stores the frp_subdomain
+    if (subdomain !== authResult.service.domain) { 
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(subdomain, serviceId);
         if (existingDomain) {
             return NextResponse.json({ error: 'New subdomain already registered by another service' }, { status: 409 });
@@ -67,10 +80,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         description, 
         legacy_local_url_info,
         generated_public_url, 
-        subdomain, // Storing frp_subdomain in 'domain' column
-        frpType,   // Storing frp_type in 'type' column
+        subdomain, 
+        frpType,   
         localPort,
-        frpType,   // Storing frp_type also in 'frp_type' column
+        frpType,   
         serviceId, 
         authResult.userId
     );
@@ -91,7 +104,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
+  const serviceId: string = params.id;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
     if (authResult.error || !authResult.userId) { 
@@ -108,21 +121,20 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
+  const serviceId: string = params.id;
    try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error) {
+    if (authResult.error || !authResult.service) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
-     // Transform data to match FrpServiceInput structure for the form
+     
      const serviceData = authResult.service;
      const responseData = {
         name: serviceData.name,
         description: serviceData.description,
         localPort: serviceData.local_port,
-        subdomain: serviceData.domain, // 'domain' in DB is the frp subdomain
-        frpType: serviceData.type,     // 'type' in DB is the frpType
-        // Other FrpServiceSchema fields can be added if they exist in DB
+        subdomain: serviceData.domain, 
+        frpType: serviceData.type,     
      };
      return NextResponse.json(responseData);
    } catch (error) {

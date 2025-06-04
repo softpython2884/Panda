@@ -2,26 +2,28 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ServiceSchema } from '@/lib/schemas';
 import { ZodError } from 'zod';
+import { getJwtFromRequest } from '@/lib/auth'; // Updated import
 
 const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
-const AUTH_COOKIE_NAME = 'panda_session_token';
 
-function getJwtFromCookie(request: NextRequest): string | null {
-  const cookie = request.cookies.get(AUTH_COOKIE_NAME);
-  return cookie?.value || null;
+// Function to get JWT from cookie or Authorization header
+// This function is now simplified as getJwtFromRequest handles both
+async function getToken(request: NextRequest): Promise<string | null> {
+  return getJwtFromRequest(request);
 }
 
+
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
-  const token = getJwtFromCookie(request);
+  const serviceId: string = params.id;
+  const token = await getToken(request);
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized: Missing session token' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: Missing session token or authorization' }, { status: 401 });
   }
 
   try {
     const body = await request.json();
-    const validationResult = ServiceSchema.safeParse(body); // Or a partial schema for updates
+    const validationResult = ServiceSchema.safeParse(body); 
 
     if (!validationResult.success) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
@@ -53,11 +55,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
-  const token = getJwtFromCookie(request);
+  const serviceId: string = params.id;
+  const token = await getToken(request);
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized: Missing session token' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: Missing session token or authorization' }, { status: 401 });
   }
 
   try {
@@ -69,10 +71,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     });
 
     if (!podResponse.ok) {
-      const podData = await podResponse.json().catch(() => ({})); // Catch if no JSON body on error
+      const podData = await podResponse.json().catch(() => ({})); 
       return NextResponse.json({ error: podData.error || 'Failed to delete service at Pod' }, { status: podResponse.status });
     }
-    // For DELETE, Pod might return 204 No Content or 200 with message
+    
     if (podResponse.status === 204) {
         return new NextResponse(null, { status: 204 });
     }
@@ -86,18 +88,18 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const serviceId = params.id;
-  const token = getJwtFromCookie(request);
+  const serviceId: string = params.id;
+  const token = await getToken(request); // Use the unified getToken
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized: Missing session token' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: Missing session token or authorization' }, { status: 401 });
   }
   
   try {
     const podResponse = await fetch(`${POD_API_URL}/api/pod/register/${serviceId}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`, // Send token to Pod
         'Content-Type': 'application/json',
       },
     });

@@ -28,7 +28,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
 
 export async function generateToken(payload: object, expiresIn: string = '1d'): Promise<string> {
   const secret = getSecret();
-  const token = await new SignJWT(payload as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+  const token = await new SignJWT(payload as any) 
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(expiresIn)
@@ -52,9 +52,8 @@ export interface AuthenticatedUser {
 }
 
 export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
-  const authHeader = request.headers.get('Authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7); // Remove "Bearer "
+  const token = await getJwtFromRequest(request);
+  if (token) {
     const decoded = await verifyToken<{ id: string }>(token);
     return decoded?.id || null;
   }
@@ -64,18 +63,13 @@ export async function getUserIdFromRequest(request: NextRequest): Promise<string
 export async function getJwtFromRequest(request: NextRequest): Promise<string | null> {
     const authHeader = request.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.substring(7); // Remove "Bearer "
+        return authHeader.substring(7); 
     }
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-            const [name, value] = cookie.trim().split('=');
-            acc[name] = value;
-            return acc;
-        }, {} as Record<string, string>);
-        if (cookies.panda_session_token) {
-            return cookies.panda_session_token;
-        }
+    
+    const cookieToken = request.cookies.get('panda_session_token');
+    if (cookieToken?.value) {
+        return cookieToken.value;
     }
+    
     return null;
 }
