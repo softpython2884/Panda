@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint } from 'lucide-react';
+import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint, UserCircle } from 'lucide-react';
 
 export default function AppNavbar() {
-  const { user, logout, isCheckingAuthSession } = useAuth(); // Use isCheckingAuthSession
+  const { user, logout, isCheckingAuthSession } = useAuth();
 
   return (
     <header className="bg-card border-b sticky top-0 z-50">
@@ -23,7 +23,7 @@ export default function AppNavbar() {
             </Link>
           </Button>
 
-          {isCheckingAuthSession ? ( // Use isCheckingAuthSession for the loading state
+          {isCheckingAuthSession ? (
             <Button variant="ghost" size="sm" disabled>Loading...</Button>
           ) : user ? (
             <>
@@ -32,9 +32,10 @@ export default function AppNavbar() {
                   <LayoutDashboard className="h-4 w-4" /> Dashboard
                 </Link>
               </Button>
+              {/* Removed /manager link as it's a less direct entry point now */}
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/manager" className="flex items-center gap-1">
-                  <Settings className="h-4 w-4" /> Manage
+                <Link href="/settings/profile" className="flex items-center gap-1">
+                  <UserCircle className="h-4 w-4" /> Settings
                 </Link>
               </Button>
               <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-1">

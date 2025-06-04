@@ -69,9 +69,8 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 3) {
-    // Add new columns for remote_port, use_encryption, use_compression
     try {
-      db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;'); // For TCP/UDP tunnels
+      db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;'); 
       db.exec('ALTER TABLE services ADD COLUMN use_encryption BOOLEAN DEFAULT TRUE;');
       db.exec('ALTER TABLE services ADD COLUMN use_compression BOOLEAN DEFAULT FALSE;');
       console.log("Added remote_port, use_encryption, use_compression columns to services table (migration step for v3).");
@@ -90,6 +89,37 @@ function initializeSchema() {
     console.log("Database schema upgraded to version 3 for advanced frp options.");
     schemaVersion = 3;
   }
+
+  if (schemaVersion < 4) {
+    try {
+      db.exec('ALTER TABLE users ADD COLUMN username TEXT UNIQUE;'); // Will be made NOT NULL later if all existing users have one
+      db.exec('ALTER TABLE users ADD COLUMN firstName TEXT;');
+      db.exec('ALTER TABLE users ADD COLUMN lastName TEXT;');
+      console.log("Added username, firstName, lastName columns to users table (migration step for v4).");
+      // If you want username to be NOT NULL and you have existing users,
+      // you would first add the column as NULLABLE, populate it for existing users,
+      // then alter it to NOT NULL. For a fresh setup, you can add it as NOT NULL directly.
+      // For now, let's assume we might need to update existing users or handle nulls initially.
+      // A better approach for existing data:
+      // 1. ADD COLUMN username TEXT UNIQUE;
+      // 2. UPDATE users SET username = email WHERE username IS NULL; (or some other default)
+      // 3. (If using SQLite version that supports it, or recreate table) ALTER TABLE users ALTER COLUMN username SET NOT NULL;
+      // For simplicity now, username is UNIQUE but can be NULL. Registration will enforce it.
+    } catch (e) {
+        if (e instanceof Error && (
+            e.message.includes('duplicate column name: username') ||
+            e.message.includes('duplicate column name: firstName') ||
+            e.message.includes('duplicate column name: lastName')
+        )) {
+             console.warn("One or more columns (username, firstName, lastName) already exist on users table (v4 migration).");
+        } else {
+            throw e;
+        }
+    }
+    db.pragma('user_version = 4');
+    console.log("Database schema upgraded to version 4 for user profiles.");
+    schemaVersion = 4;
+  }
 }
 
 initializeSchema();
@@ -100,6 +130,3 @@ process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
 
 export default db;
-
-
-    

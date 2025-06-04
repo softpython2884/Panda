@@ -8,6 +8,7 @@ const strongPassword = z.string().min(8, "Password must be at least 8 characters
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character");
 
 export const UserRegistrationSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters long.").max(30, "Username must be 30 characters or less.").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
   email: z.string().email(),
   password: strongPassword,
 });
@@ -17,12 +18,19 @@ export const UserLoginSchema = z.object({
   password: z.string(),
 });
 
-// FRPServerConfig - these will be ENV variables on the PANDA backend / Next.js app
+export const UserProfileUpdateSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters long.").max(30, "Username must be 30 characters or less.").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores.").optional(),
+    firstName: z.string().max(50, "First name must be 50 characters or less.").optional().nullable(),
+    lastName: z.string().max(50, "Last name must be 50 characters or less.").optional().nullable(),
+    // Email update would require verification, so it's handled separately or not at all for now.
+});
+
+
 const envFrpServerAddr = process.env.NEXT_PUBLIC_FRP_SERVER_ADDR;
 export const FRP_SERVER_ADDR = (envFrpServerAddr && envFrpServerAddr.trim() !== "") ? envFrpServerAddr.trim() : "panda.nationquest.fr";
 
 const envFrpServerPort = process.env.NEXT_PUBLIC_FRP_SERVER_PORT;
-export const FRP_SERVER_PORT = parseInt(envFrpServerPort || "7000", 10);
+export const FRP_SERVER_PORT = parseInt((envFrpServerPort && envFrpServerPort.trim() !== "") ? envFrpServerPort.trim() : "7000", 10);
 
 const envFrpAuthToken = process.env.FRP_AUTH_TOKEN;
 export const FRP_AUTH_TOKEN = (envFrpAuthToken && envFrpAuthToken.trim() !== "") ? envFrpAuthToken.trim() : "supersecret";
@@ -46,15 +54,11 @@ export const FrpServiceSchema = z.object({
     z.number({invalid_type_error: "Local port must be a number."}).int().min(1, "Port must be at least 1").max(65535, "Port must be at most 65535")
   ).describe("The port your local service runs on."),
   subdomain: z.string().min(3, "Subdomain must be at least 3 characters long")
-    .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "Invalid subdomain format. Use lowercase letters, numbers, and hyphens. Example: 'mycoolservice' (not 'mycoolservice.panda.nationquest.fr')"),
+    .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "Invalid subdomain format. Use lowercase letters, numbers, and hyphens. Example: 'mycoolservice' (not 'mycoolservice." + (PANDA_TUNNEL_MAIN_HOST || FRP_SERVER_BASE_DOMAIN || "example.com") + "')"),
   frpType: z.enum(frpServiceTypes, {
     errorMap: (issue, ctx) => {
       if (issue.code === 'invalid_enum_value') {
         return { message: 'Invalid tunnel type. Please select from the list.' };
-      }
-      // This will handle cases where frpType is undefined or not a valid enum member.
-      if (issue.code === 'invalid_type' && issue.path.includes('frpType')) {
-         return { message: 'Tunnel type is required and must be selected.' };
       }
       return { message: ctx.defaultError };
     },
@@ -98,6 +102,7 @@ export const ServiceSchema = FrpServiceSchema;
 
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
 export type UserLoginInput = z.infer<typeof UserLoginSchema>;
+export type UserProfileUpdateInput = z.infer<typeof UserProfileUpdateSchema>;
 export type FrpServiceInput = z.infer<typeof FrpServiceSchema>;
 export type ServiceInput = FrpServiceInput;
 export type LegacyServiceInput = z.infer<typeof LegacyServiceSchema>;

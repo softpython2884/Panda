@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UserRegistrationSchema } from "@/lib/schemas"; // Removed UserRegistrationInput type import as it's inferred
+import { UserRegistrationSchema, type UserRegistrationInput } from "@/lib/schemas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,7 +22,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RegisterForm() {
-  const { register, login } = useAuth(); // Added login from useAuth
+  const { register, login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -36,39 +36,50 @@ export default function RegisterForm() {
     path: ["confirmPassword"],
   });
 
-  type RegisterFormInput = z.infer<typeof formSchema>;
+  type RegisterFormInputExtended = z.infer<typeof formSchema>;
 
-  const form = useForm<RegisterFormInput>({
+  const form = useForm<RegisterFormInputExtended>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  async function onSubmit(values: RegisterFormInput) {
+  async function onSubmit(values: RegisterFormInputExtended) {
     setIsLoading(true);
-    const registrationSuccess = await register(values.email, values.password);
+    const registrationSuccess = await register(values.username, values.email, values.password);
     if (registrationSuccess) {
       toast({ title: "Registration Successful", description: "Attempting to log you in..." });
       const loginSuccess = await login(values.email, values.password);
       if (loginSuccess) {
-        // Login toast is handled by AuthContext.login
         router.push("/dashboard");
       } else {
-        // Login failure toast is handled by AuthContext.login
         toast({ title: "Auto-Login Failed", description: "Please try logging in manually.", variant: "destructive" });
-        router.push("/auth/login"); // Redirect to login if auto-login fails
+        router.push("/auth/login");
       }
     }
-    // If registration failed, toast is handled by AuthContext.register
     setIsLoading(false);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username (Pseudo)</FormLabel>
+              <FormControl>
+                <Input placeholder="YourUniqueUsername" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { UserRegistrationSchema } from '@/lib/schemas';
 import { ZodError } from 'zod';
 
-const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002'; // Assuming default for scaffold. Adjust if Pod is on same instance.
+const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,13 +14,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
     }
     
-    const { email, password } = validationResult.data;
+    const { username, email, password } = validationResult.data;
 
-    // Call PANDA Pod API
     const podResponse = await fetch(`${POD_API_URL}/api/pod/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, email, password }),
     });
 
     const podData = await podResponse.json();

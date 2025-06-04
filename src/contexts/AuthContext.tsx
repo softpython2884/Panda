@@ -8,13 +8,16 @@ import { useToast } from '@/hooks/use-toast';
 interface User {
   id: string;
   email: string;
+  username?: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
-  isCheckingAuthSession: boolean; // Renamed from isLoading
+  isCheckingAuthSession: boolean;
   login: (email: string, passsword: string) => Promise<boolean>;
-  register: (email: string, passsword: string) => Promise<boolean>;
+  register: (username: string, email: string, passsword: string) => Promise<boolean>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
@@ -23,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isCheckingAuthSession, setIsCheckingAuthSession] = useState(true); // Tracks initial session check
+  const [isCheckingAuthSession, setIsCheckingAuthSession] = useState(true);
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
@@ -49,9 +52,6 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchUser]);
 
   const login = async (email: string, passwordInput: string) => {
-    // This function's own loading state for UI elements (like buttons)
-    // should be handled locally in the component calling it.
-    // It directly sets the user state upon success.
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -61,7 +61,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       if (res.ok) {
         setUser(data.user);
-        toast({ title: "Login Successful", description: `Welcome back, ${data.user.email}!` });
+        const displayName = data.user.username || data.user.email;
+        toast({ title: "Login Successful", description: `Welcome back, ${displayName}!` });
         return true;
       } else {
         toast({ title: "Login Failed", description: data.error || "Invalid credentials", variant: "destructive" });
@@ -73,17 +74,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, passwordInput: string) => {
+  const register = async (username: string, email: string, passwordInput: string) => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: passwordInput }),
+        body: JSON.stringify({ username, email, password: passwordInput }),
       });
       const data = await res.json();
       if (res.ok) {
-        // Do not show "You can now log in" here, as we will attempt auto-login.
-        // The login function will show its own success/failure toasts.
         return true;
       } else {
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
@@ -98,7 +97,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null); // Clear user state
+      setUser(null);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
        toast({ title: "Logout Error", description: "Failed to log out.", variant: "destructive" });
