@@ -1,7 +1,7 @@
 
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Waypoints, Cloud, Activity, ArrowRight, Loader2 } from "lucide-react";
@@ -25,11 +25,11 @@ export default function DashboardOverviewPage() {
       if (!user) return;
       setIsLoadingTunnels(true);
       try {
-        // TODO: Modify API to support ?limit=3 or similar
-        const response = await fetch('/api/dashboard/services'); // For now, fetches all
+        // Fetch up to 3 recent services
+        const response = await fetch('/api/dashboard/services?limit=3'); 
         if (response.ok) {
           const data = await response.json();
-          setRecentTunnels(data.slice(0, 3)); // Manually slice for now
+          setRecentTunnels(data); 
         } else {
           console.error("Failed to fetch recent tunnels");
         }
