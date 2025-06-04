@@ -23,8 +23,6 @@ export const FRP_SERVER_PORT = parseInt(process.env.NEXT_PUBLIC_FRP_SERVER_PORT 
 export const FRP_AUTH_TOKEN = process.env.FRP_AUTH_TOKEN || "supersecret"; 
 export const FRP_SERVER_BASE_DOMAIN = process.env.NEXT_PUBLIC_FRP_SERVER_BASE_DOMAIN || "panda.nationquest.fr";
 
-// This will be read from the server environment. If not set, it will be undefined.
-// API routes will use this to determine if a custom tunnel host is configured.
 export const PANDA_TUNNEL_MAIN_HOST = process.env.PANDA_TUNNEL_MAIN_HOST;
 
 
@@ -40,18 +38,34 @@ export const FrpServiceSchema = z.object({
     z.number({invalid_type_error: "Local port must be a number."}).int().min(1, "Port must be at least 1").max(65535, "Port must be at most 65535")
   ).describe("The port your local service runs on."),
   subdomain: z.string().min(3, "Subdomain must be at least 3 characters long")
-    .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "Invalid subdomain format. Use lowercase letters, numbers, and hyphens. Example: 'mycoolservice' not 'mycoolservice.panda.nationquest.fr'"),
+    .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "Invalid subdomain format. Use lowercase letters, numbers, and hyphens. Example: 'mycoolservice' (not 'mycoolservice.panda.nationquest.fr')"),
   frpType: z.enum(frpServiceTypes, {
     errorMap: (issue, ctx) => {
-      if (issue.code === 'invalid_type' && issue.expected === 'union') { 
-        return { message: 'Tunnel type is required and must be selected from the list.' };
-      }
       if (issue.code === 'invalid_enum_value') {
         return { message: 'Invalid tunnel type. Please select from the list.' };
+      }
+      if (issue.code === 'invalid_type' && issue.path.includes('frpType')) {
+         return { message: 'Tunnel type is required and must be selected.' };
       }
       return { message: ctx.defaultError };
     },
   }),
+  remotePort: z.preprocess( // For TCP/UDP tunnels
+    (val) => (val === '' || val === undefined || val === null) ? undefined : (typeof val === 'string' ? parseInt(val, 10) : Number(val)),
+    z.number({invalid_type_error: "Remote port must be a number."}).int().min(1, "Port must be at least 1").max(65535, "Port must be at most 65535").optional()
+  ),
+  useEncryption: z.boolean().optional().default(true),
+  useCompression: z.boolean().optional().default(false),
+}).superRefine((data, ctx) => {
+  if ((data.frpType === 'tcp' || data.frpType === 'udp') && (data.remotePort === undefined || data.remotePort === null || data.remotePort === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Remote port is required and must be a valid port number (1-65535) for TCP and UDP tunnel types.",
+      path: ["remotePort"],
+    });
+  }
+  // If type is http/https, remotePort is not used by frpc in subdomain mode.
+  // It's okay if it's present in data, but it won't be used in frpc.toml for these types in subdomain proxying.
 });
 
 
@@ -82,5 +96,8 @@ export const ServiceSchema = FrpServiceSchema;
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
 export type UserLoginInput = z.infer<typeof UserLoginSchema>;
 export type FrpServiceInput = z.infer<typeof FrpServiceSchema>;
-export type ServiceInput = FrpServiceInput;
+export type ServiceInput = FrpServiceInput; // Alias for consistency
 export type LegacyServiceInput = z.infer<typeof LegacyServiceSchema>;
+
+
+    

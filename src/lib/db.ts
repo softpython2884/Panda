@@ -38,10 +38,10 @@ function initializeSchema() {
         user_id TEXT NOT NULL,
         name TEXT NOT NULL,
         description TEXT NOT NULL,
-        local_url TEXT, -- Legacy, will be de-emphasized for frp services
-        public_url TEXT, -- For frp, this will be the generated frp URL
-        domain TEXT NOT NULL UNIQUE, -- For frp, this will store the 'subdomain' part
-        type TEXT NOT NULL, -- For frp, this stores 'tcp', 'http', etc.
+        local_url TEXT, 
+        public_url TEXT, 
+        domain TEXT NOT NULL UNIQUE, 
+        type TEXT NOT NULL, 
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
@@ -52,18 +52,13 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 2) {
-    // Add new columns for FrpService integration
-    // And adjust existing ones if necessary
     try {
       db.exec('ALTER TABLE services ADD COLUMN local_port INTEGER;');
-      db.exec('ALTER TABLE services ADD COLUMN frp_type TEXT;'); // To distinguish from legacy 'type' if needed, or reuse 'type'
-      // For simplicity, we'll reuse 'type' for frpType and 'domain' for frp subdomain.
-      // 'local_url' becomes optional. 'public_url' is generated for frp.
-      console.log("Added local_port and frp_type columns to services table.");
+      db.exec('ALTER TABLE services ADD COLUMN frp_type TEXT;'); 
+      console.log("Added local_port and frp_type columns to services table (migration step for v2).");
     } catch (e) {
-        // Ignore if columns already exist (e.g. during rapid dev iterations)
         if (e instanceof Error && (e.message.includes('duplicate column name: local_port') || e.message.includes('duplicate column name: frp_type'))) {
-            console.warn("Columns local_port or frp_type already exist on services table.");
+            console.warn("Columns local_port or frp_type already exist on services table (v2 migration).");
         } else {
             throw e;
         }
@@ -71,6 +66,29 @@ function initializeSchema() {
     db.pragma('user_version = 2');
     console.log("Database schema upgraded to version 2 for frp integration.");
     schemaVersion = 2;
+  }
+
+  if (schemaVersion < 3) {
+    // Add new columns for remote_port, use_encryption, use_compression
+    try {
+      db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;'); // For TCP/UDP tunnels
+      db.exec('ALTER TABLE services ADD COLUMN use_encryption BOOLEAN DEFAULT TRUE;');
+      db.exec('ALTER TABLE services ADD COLUMN use_compression BOOLEAN DEFAULT FALSE;');
+      console.log("Added remote_port, use_encryption, use_compression columns to services table (migration step for v3).");
+    } catch (e) {
+        if (e instanceof Error && (
+            e.message.includes('duplicate column name: remote_port') || 
+            e.message.includes('duplicate column name: use_encryption') ||
+            e.message.includes('duplicate column name: use_compression')
+            )) {
+            console.warn("One or more columns (remote_port, use_encryption, use_compression) already exist on services table (v3 migration).");
+        } else {
+            throw e;
+        }
+    }
+    db.pragma('user_version = 3');
+    console.log("Database schema upgraded to version 3 for advanced frp options.");
+    schemaVersion = 3;
   }
 }
 
@@ -82,3 +100,6 @@ process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
 
 export default db;
+
+
+    

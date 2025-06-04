@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_DOMAIN } from "@/lib/schemas";
+import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_DOMAIN, FRP_SERVER_ADDR } from "@/lib/schemas";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, AlertTriangleIcon } from "lucide-react";
+import { Loader2, Save, AlertTriangleIcon, Info, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,7 +28,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 interface EditServiceFormProps {
@@ -40,15 +42,20 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
 
   const form = useForm<FrpServiceInput>({
     resolver: zodResolver(ServiceSchema),
     defaultValues: {
       name: "",
       description: "",
-      localPort: '' as any, // Initialize with empty string, will be parsed
+      localPort: '' as any, 
       subdomain: "",
-      frpType: "http", // Default frpType
+      frpType: "http", 
+      remotePort: undefined,
+      useEncryption: true,
+      useCompression: false,
     },
   });
 
@@ -61,20 +68,26 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
         }
         return res.json();
       })
-      .then((data: FrpServiceInput) => {
-        // Ensure localPort is treated as string for the form input if it's a number
-        const localPortValue = data.localPort === undefined || data.localPort === null ? '' : String(data.localPort);
+      .then((data: FrpServiceInput & { remote_port?: number, use_encryption?: boolean, use_compression?: boolean }) => {
+        // API might return remote_port, use_encryption etc. with underscores
+        const remotePortValue = data.remotePort ?? data.remote_port;
+        const useEncryptionValue = data.useEncryption ?? data.use_encryption ?? true;
+        const useCompressionValue = data.useCompression ?? data.use_compression ?? false;
+
         form.reset({
             name: data.name || "",
             description: data.description || "",
-            localPort: localPortValue as any, // Zod will parse it back to number on submit
+            localPort: data.localPort === undefined || data.localPort === null ? '' : String(data.localPort),
             subdomain: data.subdomain || "",
             frpType: frpServiceTypes.includes(data.frpType) ? data.frpType : "http",
+            remotePort: remotePortValue === undefined || remotePortValue === null ? undefined : Number(remotePortValue),
+            useEncryption: useEncryptionValue,
+            useCompression: useCompressionValue,
         });
       })
       .catch(err => {
         toast({ title: "Error Loading Service", description: err.message, variant: "destructive" });
-        router.push("/dashboard"); // Redirect if service can't be loaded
+        router.push("/dashboard"); 
       })
       .finally(() => setIsFetching(false));
   }, [serviceId, form, toast, router]);
@@ -84,7 +97,10 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     try {
       const payload = {
         ...values,
-        localPort: Number(values.localPort), // Ensure localPort is a number before sending
+        localPort: Number(values.localPort),
+        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') ? Number(values.remotePort) : undefined,
+        useEncryption: values.useEncryption,
+        useCompression: values.useCompression,
       };
       const response = await fetch(`/api/manager/service/${serviceId}`, {
         method: 'PUT',
@@ -95,12 +111,12 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
       if (response.ok) {
         toast({ 
             title: "Service Updated", 
-            description: `Service "${values.name}" tunnel configuration updated. You MUST get the new client config and restart your local frpc client.`,
-            duration: 7000, // Longer duration for important message
+            description: `Service "${values.name}" tunnel configuration updated. You MUST get the new client config and restart your local Panda Tunnels Client.`,
+            duration: 7000, 
         });
         router.push("/dashboard");
       } else {
-        toast({ title: "Update Failed", description: data.error || "Could not update service. The subdomain might already be in use.", variant: "destructive" });
+        toast({ title: "Update Failed", description: data.error || "Could not update service. The subdomain or remote port might already be in use.", variant: "destructive" });
       }
     } catch (error) {
       toast({ title: "Update Error", description: "An unexpected error occurred during update.", variant: "destructive" });
@@ -109,8 +125,18 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     }
   }
 
+  const frpTypeValue = form.watch("frpType");
   const currentSubdomain = form.watch("subdomain");
-  const publicUrlPreview = currentSubdomain ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}` : `your-subdomain.${FRP_SERVER_BASE_DOMAIN}`;
+  const currentRemotePort = form.watch("remotePort");
+
+  const publicUrlPreview = 
+    (frpTypeValue === 'http' || frpTypeValue === 'https') && currentSubdomain
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}`
+    : (frpTypeValue === 'tcp' || frpTypeValue === 'udp') && currentRemotePort
+    ? `${FRP_SERVER_ADDR}:${currentRemotePort}`
+    : (frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && currentSubdomain
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN} (pour STCP/XTCP, configuration serveur spécifique requise)`
+    : `(Configurez type et accès)`;
 
 
   if (isFetching) {
@@ -127,11 +153,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Alert variant="default">
           <Info className="h-4 w-4" />
-          <AlertTitle>Important: Applying Configuration Changes</AlertTitle>
+          <AlertTitle>Important: Application des Changements de Configuration</AlertTitle>
           <AlertDescription>
-            After saving changes here, PANDA&apos;s record of your service is updated.
-            However, these changes are **not automatically applied** to your running <code className="font-mono bg-muted px-1 rounded">frpc</code> client.
-            <br />You **must** go to the &quot;Get Config&quot; page for this service (from the dashboard), obtain the new <code className="font-mono bg-muted px-1 rounded">frpc.toml</code>, update your local file, and then **restart your <code className="font-mono bg-muted px-1 rounded">frpc.exe</code> client** for the new settings to take effect.
+            Après avoir sauvegardé les changements ici, l&apos;enregistrement de votre service PANDA est mis à jour.
+            Ces changements ne sont <strong>pas automatiquement appliqués</strong> à votre <code className="font-mono bg-muted px-1 rounded">Panda Tunnels Client</code> en cours d&apos;exécution.
+            <br />Vous <strong>devez</strong> aller sur la page &quot;Obtenir la Configuration&quot; pour ce service (depuis le tableau de bord), obtenir le nouveau contenu du fichier <code className="font-mono bg-muted px-1 rounded">pandaconfig.toml</code>, mettre à jour votre fichier local, puis <strong>redémarrer votre <code className="font-mono bg-muted px-1 rounded">Panda Tunnels Client</code></strong> pour que les nouveaux paramètres prennent effet.
           </AlertDescription>
         </Alert>
 
@@ -140,11 +166,11 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Service Name (for PANDA & Tunnel ID)</FormLabel>
+              <FormLabel>Nom du Service (pour PANDA & ID du Tunnel)</FormLabel>
               <FormControl>
-                <Input placeholder="MyGameServer" {...field} />
+                <Input placeholder="MonServeurDeJeu" {...field} />
               </FormControl>
-              <FormDescription>A unique name for your service. Used in tunnel configuration. Allowed: letters, numbers, hyphens, and underscores.</FormDescription>
+              <FormDescription>Un nom unique pour votre service. Utilisé dans la configuration du tunnel. Caractères autorisés : lettres, chiffres, tirets, et underscores.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -156,7 +182,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Brief description of your service (e.g., Minecraft Server, Personal Blog)." {...field} />
+                <Textarea placeholder="Brève description de votre service (ex: Serveur Minecraft, Blog Personnel)." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -168,18 +194,17 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
             name="localPort"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Local Port</FormLabel>
+                <FormLabel>Port Local</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="e.g., 3000 or 25565"
+                    placeholder="ex: 3000 ou 25565"
                     {...field}
-                    // Value is managed as string by react-hook-form for type="number" when it can be empty
-                    // Zod schema handles parsing to number
+                    value={field.value === undefined || field.value === null ? '' : String(field.value)}
                     onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
-                <FormDescription>The port your service runs on locally.</FormDescription>
+                <FormDescription>Le port sur lequel votre service tourne localement.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -189,50 +214,140 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
             name="frpType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tunnel Type</FormLabel>
+                <FormLabel>Type de Tunnel</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a tunnel type" />
+                      <SelectValue placeholder="Sélectionnez un type de tunnel" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {frpServiceTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
+                       <SelectItem key={type} value={type}>
                         {type.toUpperCase()}
+                        {type === 'stcp' && ' (TCP Secret)'}
+                        {type === 'xtcp' && ' (TCP P2P)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Protocol of your local service. For Minecraft (Java), use TCP and port 25565.</FormDescription>
+                <FormDescription>Protocole de votre service local. Pour Minecraft (Java), utilisez TCP et le port 25565.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <FormField
-            control={form.control}
-            name="subdomain"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Desired Subdomain</FormLabel>
-                <FormControl>
-                  <Input placeholder="mycoolservice" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Your service will be accessible at <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
-                  Use lowercase letters, numbers, and hyphens. This is used for HTTP/HTTPS tunnel types and helps form the public URL.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+        {(frpTypeValue === 'http' || frpTypeValue === 'https' || frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && (
+            <FormField
+                control={form.control}
+                name="subdomain"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Sous-domaine souhaité</FormLabel>
+                    <FormControl>
+                    <Input placeholder="monsuperservice" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                     Utilisé pour les types HTTP, HTTPS, STCP, XTCP. Votre service sera accessible à <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
+                    Utilisez des lettres minuscules, chiffres, et tirets.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+        
+        {(frpTypeValue === 'tcp' || frpTypeValue === 'udp') && (
+            <FormField
+                control={form.control}
+                name="remotePort"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Port distant souhaité sur le serveur</FormLabel>
+                    <FormControl>
+                    <Input 
+                        type="number" 
+                        placeholder="ex: 7001 (doit être unique sur le serveur)" 
+                        {...field}
+                        value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                        onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    />
+                    </FormControl>
+                    <FormDescription>
+                    Requis pour les types TCP/UDP. Votre service sera accessible à <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+
+        <Accordion type="single" collapsible className="w-full" defaultValue={ (form.getValues("useEncryption") !== true || form.getValues("useCompression") !== false) ? "advanced-settings" : undefined }>
+          <AccordionItem value="advanced-settings">
+            <AccordionTrigger onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-medium">
+                Paramètres Avancés
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-6">
+              <FormField
+                control={form.control}
+                name="useEncryption"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="useEncryptionEdit"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <Label htmlFor="useEncryptionEdit" className="cursor-pointer">
+                        Activer l&apos;Encryption
+                      </Label>
+                      <FormDescription>
+                        Chiffre les données entre le client et le serveur Panda Tunnels (recommandé).
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="useCompression"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="useCompressionEdit"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <Label htmlFor="useCompressionEdit" className="cursor-pointer">
+                        Activer la Compression
+                      </Label>
+                      <FormDescription>
+                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
         <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || isFetching}>
           {(isLoading || isFetching) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
-          Save Tunnel Changes
+          Sauvegarder les Modifications du Tunnel
         </Button>
       </form>
     </Form>
   );
 }
+
+
+    

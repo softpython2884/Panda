@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, frpServiceTypes, PANDA_TUNNEL_MAIN_HOST } from '@/lib/schemas';
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, type FrpServiceInput, FRP_SERVER_ADDR } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 
@@ -46,29 +46,42 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
     }
     
-    const { name, description, localPort, subdomain, frpType } = validationResult.data;
+    const { name, description, localPort, subdomain, frpType, remotePort, useEncryption, useCompression } = validationResult.data;
     
     let generated_public_url: string;
-    if (PANDA_TUNNEL_MAIN_HOST) { // PANDA_TUNNEL_MAIN_HOST is now correctly imported and can be undefined
-      generated_public_url = `http://${subdomain}.${PANDA_TUNNEL_MAIN_HOST}`;
+    const effectiveBaseDomain = PANDA_TUNNEL_MAIN_HOST || FRP_SERVER_BASE_DOMAIN;
+
+    if (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp') {
+        generated_public_url = `http://${subdomain}.${effectiveBaseDomain}`;
+         if (frpType === 'https') {
+             generated_public_url = `https://${subdomain}.${effectiveBaseDomain}`;
+        }
+    } else if ((frpType === 'tcp' || frpType === 'udp') && remotePort) {
+        generated_public_url = `${FRP_SERVER_ADDR}:${remotePort}`;
     } else {
-      // Fallback if PANDA_TUNNEL_MAIN_HOST is not set in environment
-      generated_public_url = `http://${subdomain}.${FRP_SERVER_BASE_DOMAIN}`; 
-      console.warn(`PANDA_TUNNEL_MAIN_HOST environment variable is not set. Falling back to FRP_SERVER_BASE_DOMAIN for public URL generation: ${generated_public_url}`);
+        generated_public_url = `Configuration Incomplete - ${subdomain}.${effectiveBaseDomain}`;
     }
         
     const legacy_local_url_info = `127.0.0.1:${localPort}`;
 
-    if (subdomain !== authResult.service.domain) { 
+    // Check for uniqueness of subdomain or remotePort if they changed
+    if (subdomain !== authResult.service.domain && (frpType === 'http' || frpType === 'https' || frpType === 'stcp' || frpType === 'xtcp')) { 
         const existingDomain = db.prepare('SELECT id FROM services WHERE domain = ? AND id != ?').get(subdomain, serviceId);
         if (existingDomain) {
             return NextResponse.json({ error: 'New subdomain already registered by another service' }, { status: 409 });
         }
     }
+    if (remotePort !== authResult.service.remote_port && (frpType === 'tcp' || frpType === 'udp') && remotePort) {
+        const existingRemotePort = db.prepare('SELECT id FROM services WHERE remote_port = ? AND frp_type IN (?, ?) AND id != ?').get(remotePort, 'tcp', 'udp', serviceId);
+        if (existingRemotePort) {
+            return NextResponse.json({ error: `New remote port ${remotePort} is already in use for a TCP/UDP tunnel. Please choose another.` }, { status: 409 });
+        }
+    }
+
 
     db.prepare(
       `UPDATE services 
-       SET name = ?, description = ?, local_url = ?, public_url = ?, domain = ?, type = ?, local_port = ?, frp_type = ?
+       SET name = ?, description = ?, local_url = ?, public_url = ?, domain = ?, type = ?, local_port = ?, frp_type = ?, remote_port = ?, use_encryption = ?, use_compression = ?
        WHERE id = ? AND user_id = ?`
     ).run(
         name, 
@@ -79,6 +92,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         frpType,   
         localPort,
         frpType,   
+        (frpType === 'tcp' || frpType === 'udp') ? remotePort : null,
+        useEncryption,
+        useCompression,
         serviceId, 
         authResult.userId
     );
@@ -91,8 +107,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
     }
     console.error('Service update error:', error);
-    if (error instanceof Error && error.message.includes('UNIQUE constraint failed: services.domain')) {
-        return NextResponse.json({ error: 'Subdomain already registered' }, { status: 409 });
+     if (error instanceof Error) {
+        if (error.message.includes('UNIQUE constraint failed: services.domain')) {
+            return NextResponse.json({ error: 'Subdomain already registered' }, { status: 409 });
+        }
+        if (error.message.includes('UNIQUE constraint failed: services.remote_port')) {
+             return NextResponse.json({ error: 'Remote port already in use' }, { status: 409 });
+        }
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -128,9 +149,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
      const responseData: FrpServiceInput = {
         name: serviceData.name,
         description: serviceData.description,
-        localPort: serviceData.local_port, // This should be a number
+        localPort: serviceData.local_port, 
         subdomain: serviceData.domain, 
-        frpType: serviceData.type as FrpServiceType, // Cast if 'type' could be broader      
+        frpType: serviceData.type as FrpServiceInput['frpType'], // 'type' in DB is frpType
+        remotePort: serviceData.remote_port, // Ensure this is passed
+        useEncryption: serviceData.use_encryption,
+        useCompression: serviceData.use_compression,
      };
      return NextResponse.json(responseData);
    } catch (error) {
@@ -138,3 +162,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+
+    

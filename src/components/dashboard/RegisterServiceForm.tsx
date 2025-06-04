@@ -19,7 +19,7 @@ import { ServiceSchema, type FrpServiceInput, frpServiceTypes, FRP_SERVER_BASE_D
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Settings2 } from "lucide-react";
+import { Loader2, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,30 +27,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 export default function RegisterServiceForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const form = useForm<FrpServiceInput>({
     resolver: zodResolver(ServiceSchema),
     defaultValues: {
       name: "",
       description: "",
-      localPort: '' as any, // Initialize with empty string for controlled input, will be parsed to number
+      localPort: '' as any, 
       subdomain: "",
       frpType: "http",
+      remotePort: undefined, // Default to undefined
+      useEncryption: true,
+      useCompression: false,
     },
   });
+
+  const frpTypeValue = form.watch("frpType");
+  const currentSubdomain = form.watch("subdomain");
+  const currentRemotePort = form.watch("remotePort");
+
+  const publicUrlPreview = 
+    (frpTypeValue === 'http' || frpTypeValue === 'https') && currentSubdomain
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}`
+    : (frpTypeValue === 'tcp' || frpTypeValue === 'udp') && currentRemotePort
+    ? `${FRP_SERVER_ADDR}:${currentRemotePort}`
+    : (frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && currentSubdomain
+    ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN} (pour STCP/XTCP, configuration serveur spécifique requise)`
+    : `(Configurez type et accès)`;
+
 
   async function onSubmit(values: FrpServiceInput) {
     setIsLoading(true);
     try {
-      // Ensure localPort is a number before sending
       const payload = {
         ...values,
         localPort: Number(values.localPort),
+        remotePort: (values.frpType === 'tcp' || values.frpType === 'udp') ? Number(values.remotePort) : undefined,
+        useEncryption: values.useEncryption,
+        useCompression: values.useCompression,
       };
 
       const response = await fetch('/api/dashboard/services', {
@@ -72,9 +96,6 @@ export default function RegisterServiceForm() {
     }
   }
 
-  const currentSubdomain = form.watch("subdomain");
-  const publicUrlPreview = currentSubdomain ? `${currentSubdomain}.${FRP_SERVER_BASE_DOMAIN}` : `your-subdomain.${FRP_SERVER_BASE_DOMAIN}`;
-
 
   return (
     <Form {...form}>
@@ -84,11 +105,11 @@ export default function RegisterServiceForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Service Name (for PANDA & Tunnel ID)</FormLabel>
+              <FormLabel>Nom du Service (pour PANDA & ID du Tunnel)</FormLabel>
               <FormControl>
-                <Input placeholder="MyGameServer" {...field} />
+                <Input placeholder="MonServeurDeJeu" {...field} />
               </FormControl>
-              <FormDescription>A unique name for your service. Used in tunnel configuration. Allowed: letters, numbers, -, _</FormDescription>
+              <FormDescription>Un nom unique pour votre service. Utilisé dans la configuration du tunnel. Caractères autorisés : lettres, chiffres, tirets, et underscores.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -100,7 +121,7 @@ export default function RegisterServiceForm() {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Brief description of your service (e.g., Minecraft Server, Personal Blog)." {...field} />
+                <Textarea placeholder="Brève description de votre service (ex: Serveur Minecraft, Blog Personnel)." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,19 +133,17 @@ export default function RegisterServiceForm() {
             name="localPort"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Local Port</FormLabel>
+                <FormLabel>Port Local</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="e.g., 3000 or 25565"
+                    placeholder="ex: 3000 ou 25565"
                     {...field}
-                    // onChange in Zod schema handles parsing to number
-                    // Value should be string for controlled input if it can be empty, or number if always number
                     value={field.value === undefined || field.value === null ? '' : String(field.value)}
                     onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   />
                 </FormControl>
-                <FormDescription>The port your service runs on locally (e.g., `80`, `3000`, `25565`).</FormDescription>
+                <FormDescription>Le port sur lequel votre service tourne localement (ex: `80`, `3000`, `25565`).</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -134,51 +153,139 @@ export default function RegisterServiceForm() {
             name="frpType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tunnel Type</FormLabel>
+                <FormLabel>Type de Tunnel</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a tunnel type" />
+                      <SelectValue placeholder="Sélectionnez un type de tunnel" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {frpServiceTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type.toUpperCase()}
+                        {type === 'stcp' && ' (TCP Secret)'}
+                        {type === 'xtcp' && ' (TCP P2P)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Protocol of your local service. For Minecraft, use TCP and port 25565.</FormDescription>
+                <FormDescription>Protocole de votre service local. Pour Minecraft (Java), utilisez TCP et le port 25565.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <FormField
-            control={form.control}
-            name="subdomain"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Desired Subdomain</FormLabel>
-                <FormControl>
-                  <Input placeholder="mycoolservice" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Your service will be accessible at <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
-                  Use lowercase letters, numbers, and hyphens. This is used for HTTP/HTTPS and informative for other types.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+        {(frpTypeValue === 'http' || frpTypeValue === 'https' || frpTypeValue === 'stcp' || frpTypeValue === 'xtcp') && (
+            <FormField
+                control={form.control}
+                name="subdomain"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Sous-domaine souhaité</FormLabel>
+                    <FormControl>
+                    <Input placeholder="monsuperservice" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                    Utilisé pour les types HTTP, HTTPS, STCP, XTCP. Votre service sera accessible à <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
+                    Utilisez des lettres minuscules, chiffres, et tirets.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+        
+        {(frpTypeValue === 'tcp' || frpTypeValue === 'udp') && (
+            <FormField
+                control={form.control}
+                name="remotePort"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Port distant souhaité sur le serveur</FormLabel>
+                    <FormControl>
+                    <Input 
+                        type="number" 
+                        placeholder="ex: 7001 (doit être unique sur le serveur)" 
+                        {...field}
+                        value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                        onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    />
+                    </FormControl>
+                    <FormDescription>
+                    Requis pour les types TCP/UDP. Votre service sera accessible à <code className="bg-muted px-1 py-0.5 rounded">{publicUrlPreview}</code>.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+        
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="advanced-settings">
+            <AccordionTrigger onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-medium">
+                Paramètres Avancés
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-6">
+              <FormField
+                control={form.control}
+                name="useEncryption"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel htmlFor="useEncryption">
+                        Activer l&apos;Encryption
+                      </FormLabel>
+                      <FormDescription>
+                        Chiffre les données entre le client et le serveur Panda Tunnels (recommandé).
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="useCompression"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel htmlFor="useCompression">
+                        Activer la Compression
+                      </FormLabel>
+                      <FormDescription>
+                        Compresse les données. Peut améliorer la vitesse sur des connexions lentes mais augmente l&apos;usage CPU.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
 
         <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Settings2 className="mr-2 h-4 w-4" />
-          Register Tunnel Service
+          Enregistrer le Service Tunnel
         </Button>
       </form>
     </Form>
   );
 }
+
+
+    
