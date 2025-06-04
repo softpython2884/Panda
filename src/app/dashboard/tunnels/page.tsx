@@ -56,10 +56,10 @@ export default function TunnelsDashboardPage() {
         setIsLoading(false);
       }
     }
-    if (user) { // Only fetch if user is available
+    if (user) { 
         fetchServices();
     } else {
-        setIsLoading(false); // If no user, not loading services for them
+        setIsLoading(false); 
     }
   }, [user, toast]);
 
@@ -161,16 +161,18 @@ export default function TunnelsDashboardPage() {
                   Port Local: <span className="text-muted-foreground">{service.local_port || 'N/A'}</span>
                 </div>
               </CardContent>
-              <CardFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" size="sm" asChild className="flex-1 w-full sm:w-auto">
+              <CardFooter className="border-t pt-4 flex flex-wrap gap-2"> {/* flex-wrap ajouté ici */}
+                <Button variant="outline" size="sm" asChild className="flex-grow min-w-[calc(50%-0.25rem)] sm:flex-none sm:flex-1"> {/* flex-grow et min-width pour 2 par ligne sur petit écran */}
                   <Link href={`/manager/service/${service.id}`}><Edit3 className="h-4 w-4 mr-1" /> Éditer</Link>
                 </Button>
-                 <Button variant="secondary" size="sm" asChild className="flex-1 w-full sm:w-auto">
+                 <Button variant="secondary" size="sm" asChild className="flex-grow min-w-[calc(50%-0.25rem)] sm:flex-none sm:flex-1">
                   <Link href={`/dashboard/service/${service.id}/client-config`}><DownloadCloud className="h-4 w-4 mr-1" /> Obtenir Config</Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="flex-1 w-full sm:w-auto"><Trash2 className="h-4 w-4 mr-1" /> Supprimer</Button>
+                    <Button variant="destructive" size="sm" className="w-full sm:flex-1"> {/* w-full pour prendre toute la largeur si seul sur une ligne */}
+                      <Trash2 className="h-4 w-4 mr-1" /> Supprimer
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
