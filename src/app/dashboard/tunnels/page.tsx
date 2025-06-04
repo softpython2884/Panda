@@ -161,16 +161,16 @@ export default function TunnelsDashboardPage() {
                   Port Local: <span className="text-muted-foreground">{service.local_port || 'N/A'}</span>
                 </div>
               </CardContent>
-              <CardFooter className="border-t pt-4 flex flex-wrap gap-2"> {/* flex-wrap ajouté ici */}
-                <Button variant="outline" size="sm" asChild className="flex-grow min-w-[calc(50%-0.25rem)] sm:flex-none sm:flex-1"> {/* flex-grow et min-width pour 2 par ligne sur petit écran */}
+              <CardFooter className="border-t pt-4 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild className="flex-grow min-w-[calc(50%-0.5rem)] sm:flex-grow-0 sm:flex-1">
                   <Link href={`/manager/service/${service.id}`}><Edit3 className="h-4 w-4 mr-1" /> Éditer</Link>
                 </Button>
-                 <Button variant="secondary" size="sm" asChild className="flex-grow min-w-[calc(50%-0.25rem)] sm:flex-none sm:flex-1">
+                 <Button variant="secondary" size="sm" asChild className="flex-grow min-w-[calc(50%-0.5rem)] sm:flex-grow-0 sm:flex-1">
                   <Link href={`/dashboard/service/${service.id}/client-config`}><DownloadCloud className="h-4 w-4 mr-1" /> Obtenir Config</Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="w-full sm:flex-1"> {/* w-full pour prendre toute la largeur si seul sur une ligne */}
+                    <Button variant="destructive" size="sm" className="w-full mt-2 sm:mt-0 sm:w-auto sm:flex-1"> 
                       <Trash2 className="h-4 w-4 mr-1" /> Supprimer
                     </Button>
                   </AlertDialogTrigger>

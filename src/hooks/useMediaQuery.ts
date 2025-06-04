@@ -1,5 +1,5 @@
 
-"use client"; // Assurez-vous que c'est un composant client
+"use client"; 
 
 import { useState, useEffect } from 'react';
 
@@ -7,8 +7,11 @@ export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    // Vérifiez si window est défini (pour éviter les erreurs SSR)
     if (typeof window === 'undefined') {
+      // Pendant le rendu côté serveur, nous pouvons retourner une valeur par défaut ou false.
+      // Cela évite les erreurs "window is not defined".
+      // Pour ce cas, retourner false semble raisonnable car le menu "desktop" ne devrait pas s'afficher.
+      setMatches(false);
       return;
     }
 
@@ -16,22 +19,18 @@ export function useMediaQuery(query: string): boolean {
     
     const listener = () => setMatches(mediaQueryList.matches);
 
-    // Définir l'état initial
-    listener();
+    listener(); 
     
-    // Écouter les changements
-    // Ancienne méthode addListener (pour la compatibilité) et nouvelle addEventListener
     try {
         mediaQueryList.addEventListener('change', listener);
-    } catch (e) { // Safari < 14
+    } catch (e) { 
         mediaQueryList.addListener(listener);
     }
-
 
     return () => {
       try {
         mediaQueryList.removeEventListener('change', listener);
-      } catch (e) { // Safari < 14
+      } catch (e) { 
         mediaQueryList.removeListener(listener);
       }
     };
