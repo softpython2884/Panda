@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Loader2, ShieldCheck, Users, Server, Settings, BarChart3 } from "lucide-react";
+import { Loader2, ShieldCheck, Users, Server, Settings, BarChart3, ListOrdered } from "lucide-react";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,7 @@ const adminSidebarNavItems = [
   { title: "Admin Dashboard", href: "/admin", icon: ShieldCheck },
   { title: "User Management", href: "/admin/users", icon: Users },
   { title: "Service Management", href: "/admin/services", icon: Server },
+  { title: "Command Management", href: "/admin/commands", icon: ListOrdered },
   // { title: "System Settings", href: "/admin/settings", icon: Settings },
   // { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];
