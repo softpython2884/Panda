@@ -26,27 +26,27 @@ function initializeSchema() {
 
 
   if (schemaVersion < 1) {
-    db.exec(\`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS services (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL,
-        local_url TEXT, 
-        public_url TEXT, 
-        domain TEXT NOT NULL UNIQUE, 
-        type TEXT NOT NULL, 
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
-    \`);
+    db.exec(
+      'CREATE TABLE IF NOT EXISTS users (\n' +
+      '  id TEXT PRIMARY KEY,\n' +
+      '  email TEXT UNIQUE NOT NULL,\n' +
+      '  password_hash TEXT NOT NULL,\n' +
+      '  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n' +
+      ');\n' +
+      '\n' +
+      'CREATE TABLE IF NOT EXISTS services (\n' +
+      '  id TEXT PRIMARY KEY,\n' +
+      '  user_id TEXT NOT NULL,\n' +
+      '  name TEXT NOT NULL,\n' +
+      '  description TEXT NOT NULL,\n' +
+      '  local_url TEXT, \n' +
+      '  public_url TEXT, \n' +
+      '  domain TEXT NOT NULL UNIQUE, \n' +
+      '  type TEXT NOT NULL, \n' +
+      '  created_at TEXT DEFAULT CURRENT_TIMESTAMP,\n' +
+      '  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n' +
+      ');'
+    );
     db.pragma('user_version = 1');
     console.log("Database schema initialized to version 1.");
     schemaVersion = 1;
