@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Send verification email (fire and forget, but log errors)
     sendVerificationEmail(email, emailVerificationToken, username)
-      .catch(err => console.error(\`Failed to send verification email to \${email}:\`, err));
+      .catch(err => console.error('Failed to send verification email to ' + email + ':', err));
 
     return NextResponse.json({ message: 'User registered successfully. Please check your email to verify your account.', userId }, { status: 201 });
   } catch (error) {
