@@ -15,19 +15,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UserRegistrationSchema, type UserRegistrationInput } from "@/lib/schemas";
-import { useAuth } from "@/contexts/AuthContext";
+// import { useAuth } from "@/contexts/AuthContext"; // Not using login from context here
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function RegisterForm() {
-  const { register, login } = useAuth();
+  // const { register, login } = useAuth(); // Not logging in immediately after register anymore
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState<string | null>(null);
+
 
   const formSchema = UserRegistrationSchema.extend({
     confirmPassword: z.string().min(1, "Please confirm your password"),
@@ -50,23 +53,46 @@ export default function RegisterForm() {
 
   async function onSubmit(values: RegisterFormInputExtended) {
     setIsLoading(true);
-    const registrationSuccess = await register(values.username, values.email, values.password);
-    if (registrationSuccess) {
-      toast({ title: "Registration Successful", description: "Attempting to log you in..." });
-      const loginSuccess = await login(values.email, values.password);
-      if (loginSuccess) {
-        router.push("/dashboard");
+    setRegistrationMessage(null);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: values.username, email: values.email, password: values.password }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ 
+            title: "Registration Submitted", 
+            description: "Please check your email to verify your account before logging in.",
+            duration: 10000, // Longer duration for this important message
+        });
+        setRegistrationMessage(data.message || "Registration successful. Please check your email to verify your account.");
+        form.reset(); // Clear form on success
+        // router.push("/auth/login?message=verification_sent"); // Optionally redirect or show message here
       } else {
-        toast({ title: "Auto-Login Failed", description: "Please try logging in manually.", variant: "destructive" });
-        router.push("/auth/login");
+        toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
       }
+    } catch (error) {
+      toast({ title: "Registration Error", description: "An unexpected error occurred.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {registrationMessage && (
+          <Alert variant="default" className="bg-green-50 border-green-300 text-green-700">
+            <MailCheck className="h-5 w-5 text-green-600" />
+            <AlertTitle className="font-semibold">Registration Successful!</AlertTitle>
+            <AlertDescription>
+              {registrationMessage} You can now close this page or proceed to login once verified.
+            </AlertDescription>
+          </Alert>
+        )}
         <FormField
           control={form.control}
           name="username"
@@ -149,9 +175,9 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading || !!registrationMessage}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Register
+          {registrationMessage ? "Verification Email Sent" : "Register"}
         </Button>
       </form>
     </Form>

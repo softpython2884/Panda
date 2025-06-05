@@ -26,7 +26,7 @@ function initializeSchema() {
 
 
   if (schemaVersion < 1) {
-    db.exec(`
+    db.exec(\`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
@@ -46,7 +46,7 @@ function initializeSchema() {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
-    `);
+    \`);
     db.pragma('user_version = 1');
     console.log("Database schema initialized to version 1.");
     schemaVersion = 1;
@@ -134,9 +134,9 @@ function initializeSchema() {
         const adminUser = db.prepare('SELECT id FROM users WHERE email = ?').get(PANDA_ADMIN_EMAIL);
         if (adminUser) {
           db.prepare("UPDATE users SET role = 'ADMIN' WHERE id = ?").run((adminUser as any).id);
-          console.log(`User ${PANDA_ADMIN_EMAIL} assigned ADMIN role.`);
+          console.log(\`User \${PANDA_ADMIN_EMAIL} assigned ADMIN role.\`);
         } else {
-          console.log(`Admin email ${PANDA_ADMIN_EMAIL} not found, no user assigned ADMIN role automatically during migration.`);
+          console.log(\`Admin email \${PANDA_ADMIN_EMAIL} not found, no user assigned ADMIN role automatically during migration.\`);
         }
       } else {
         console.log("PANDA_ADMIN_EMAIL not set, no user assigned ADMIN role automatically during migration.");
@@ -155,7 +155,7 @@ function initializeSchema() {
 
   if (schemaVersion < 6) {
     try {
-      db.exec(`
+      db.exec(\`
         CREATE TABLE IF NOT EXISTS api_tokens (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
@@ -168,7 +168,7 @@ function initializeSchema() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
-      `);
+      \`);
       console.log("Created api_tokens table (migration step for v6).");
     } catch (e) {
       console.error("Error creating api_tokens table:", e);
@@ -181,7 +181,7 @@ function initializeSchema() {
 
   if (schemaVersion < 7) {
     try {
-      db.exec(`
+      db.exec(\`
         CREATE TABLE IF NOT EXISTS notifications (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
@@ -193,7 +193,7 @@ function initializeSchema() {
           read_at TEXT, -- Timestamp when the notification was read
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
-      `);
+      \`);
       console.log("Created notifications table (migration step for v7).");
     } catch (e) {
       console.error("Error creating notifications table:", e);
@@ -202,6 +202,23 @@ function initializeSchema() {
     db.pragma('user_version = 7');
     console.log("Database schema upgraded to version 7 for user notifications.");
     schemaVersion = 7;
+  }
+
+  if (schemaVersion < 8) {
+    try {
+      db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;");
+      db.exec("ALTER TABLE users ADD COLUMN email_verification_token TEXT;");
+      console.log("Added email_verified and email_verification_token columns to users table (migration step for v8).");
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('duplicate column name')) {
+        console.warn("Columns for email verification already exist on users table (v8 migration).");
+      } else {
+        throw e;
+      }
+    }
+    db.pragma('user_version = 8');
+    console.log("Database schema upgraded to version 8 for email verification.");
+    schemaVersion = 8;
   }
 }
 

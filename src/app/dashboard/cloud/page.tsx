@@ -4,7 +4,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction } from "lucide-react";
+import { CloudCog, Construction, Share2, Users } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function CloudDashboardPage() {
   return (
@@ -26,6 +27,16 @@ export default function CloudDashboardPage() {
           </p>
         </CardContent>
       </Card>
+
+      <Alert className="w-full max-w-md mt-8">
+        <Share2 className="h-5 w-5" />
+        <AlertTitle>Partage de Cloud (Prochainement)</AlertTitle>
+        <AlertDescription>
+          Vous pourrez bientôt partager vos "serveurs cloud" ou fichiers spécifiques avec d'autres utilisateurs PANDA ou via des liens publics sécurisés.
+          La gestion des permissions et des liens de partage sera disponible ici.
+        </AlertDescription>
+      </Alert>
+
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour à l'Aperçu</Link>
        </Button>
