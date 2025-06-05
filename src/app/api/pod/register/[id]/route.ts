@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, FRP_SERVER_ADDR, type FrpServiceInput } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
+import { createUserNotification } from '@/lib/notificationsHelper';
 
 async function authorizeAndGetService(request: NextRequest, serviceId: string) {
   const authHeader = request.headers.get('Authorization');
@@ -33,11 +34,15 @@ async function authorizeAndGetService(request: NextRequest, serviceId: string) {
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const serviceId: string = params.id;
+  let userIdForNotification: string | null = null;
+  let serviceNameForNotification: string | null = null;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
     if (authResult.error || !authResult.service || !authResult.userId) { 
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
+    userIdForNotification = authResult.userId;
+    serviceNameForNotification = authResult.service.name;
     
     const body = await request.json();
     const validationResult = ServiceSchema.safeParse(body);
@@ -102,6 +107,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     );
     
     const updatedService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
+
+    if (userIdForNotification) {
+      await createUserNotification({
+        userId: userIdForNotification,
+        message: `Votre service tunnel "${name}" a été mis à jour. N'oubliez pas de mettre à jour votre configuration client si nécessaire.`,
+        type: 'info',
+        link: `/dashboard/service/${serviceId}/client-config`
+      });
+    }
+
     return NextResponse.json({ message: 'Service updated successfully', service: updatedService });
 
   } catch (error) {
@@ -123,16 +138,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const serviceId: string = params.id;
+  let userIdForNotification: string | null = null;
+  let serviceNameForNotification: string | null = null;
   try {
     const authResult = await authorizeAndGetService(request, serviceId);
-    if (authResult.error || !authResult.userId) { 
+    if (authResult.error || !authResult.userId || !authResult.service) { 
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
+    userIdForNotification = authResult.userId;
+    serviceNameForNotification = authResult.service.name;
 
     db.prepare('DELETE FROM services WHERE id = ? AND user_id = ?').run(serviceId, authResult.userId);
-    // FRP ne permet pas la suppression dynamique de proxies via une API simple par défaut.
-    // Il faudrait un mécanisme de rechargement de la configuration de frps, ou une gestion via l'API admin de frps si activée.
-    // Pour l'instant, PANDA supprime juste l'enregistrement.
+    
+    if (userIdForNotification && serviceNameForNotification) {
+      await createUserNotification({
+        userId: userIdForNotification,
+        message: `Votre service tunnel "${serviceNameForNotification}" a été supprimé.`,
+        type: 'info'
+      });
+    }
     return NextResponse.json({ message: 'Service deleted successfully from PANDA. You may need to manually update/restart your Panda Tunnels Server (frps) if it was configured statically.' });
 
   } catch (error) {
@@ -157,8 +181,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         subdomain: serviceData.domain, 
         frpType: serviceData.type as FrpServiceInput['frpType'],
         remotePort: serviceData.remote_port === null ? undefined : Number(serviceData.remote_port),
-        useEncryption: Boolean(serviceData.use_encryption), // Convert 0/1 from DB to boolean
-        useCompression: Boolean(serviceData.use_compression), // Convert 0/1 from DB to boolean
+        useEncryption: Boolean(serviceData.use_encryption), 
+        useCompression: Boolean(serviceData.use_compression),
      };
      return NextResponse.json(responseData);
    } catch (error) {

@@ -33,6 +33,16 @@ export default function AppNavbar() {
             </Button>
           ) : user ? (
             <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard" className="flex items-center gap-1">
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/settings/profile" className="flex items-center gap-1">
+                  <UserCircle className="h-4 w-4" /> Settings
+                </Link>
+              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
@@ -49,17 +59,6 @@ export default function AppNavbar() {
                   <NotificationsDropdown setUnreadCount={setUnreadNotificationsCount} />
                 </PopoverContent>
               </Popover>
-
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard" className="flex items-center gap-1">
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
-                </Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/settings/profile" className="flex items-center gap-1">
-                  <UserCircle className="h-4 w-4" /> Settings
-                </Link>
-              </Button>
               <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-1">
                 <LogOut className="h-4 w-4" /> Logout
               </Button>

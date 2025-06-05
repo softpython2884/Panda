@@ -4,8 +4,10 @@ import { db } from '@/lib/db';
 import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, FRP_SERVER_ADDR } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
+import { createUserNotification } from '@/lib/notificationsHelper';
 
 export async function POST(request: NextRequest) {
+  let userId: string | null = null;
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
     if (!decodedUser || !decodedUser.id) {
       return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });
     }
-    const userId = decodedUser.id;
+    userId = decodedUser.id;
 
     const body = await request.json();
     const validationResult = ServiceSchema.safeParse(body);
@@ -36,9 +38,6 @@ export async function POST(request: NextRequest) {
     } else if ((frpType === 'tcp' || frpType === 'udp') && remotePort) {
         generated_public_url = `${FRP_SERVER_ADDR}:${remotePort}`;
     } else if (frpType === 'stcp' || frpType === 'xtcp') {
-        // For STCP/XTCP, the public URL might be more informational if a specific port isn't exposed directly by frps for these types via subdomain alone.
-        // The client typically binds to a local port to access the STCP/XTCP service.
-        // We can still construct a domain-based URL for informational purposes.
         generated_public_url = `${subdomain}.${effectiveBaseDomain} (via STCP/XTCP - voir config client)`;
     }
      else {
@@ -83,6 +82,15 @@ export async function POST(request: NextRequest) {
     );
 
     const newService = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
+
+    if (userId) {
+        await createUserNotification({
+            userId,
+            message: `Votre service tunnel "${name}" a été créé avec succès. Il est accessible via ${generated_public_url}.`,
+            type: 'success',
+            link: `/dashboard/service/${serviceId}/client-config`
+        });
+    }
 
     return NextResponse.json({ message: 'Service registered successfully', service: newService }, { status: 201 });
 
