@@ -178,6 +178,31 @@ function initializeSchema() {
     console.log("Database schema upgraded to version 6 for API tokens.");
     schemaVersion = 6;
   }
+
+  if (schemaVersion < 7) {
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          message TEXT NOT NULL,
+          type TEXT DEFAULT 'info' NOT NULL, -- e.g., info, warning, success, command_update, admin_message
+          link TEXT, -- Optional URL the notification links to
+          is_read INTEGER DEFAULT 0, -- 0 for false, 1 for true
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          read_at TEXT, -- Timestamp when the notification was read
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      console.log("Created notifications table (migration step for v7).");
+    } catch (e) {
+      console.error("Error creating notifications table:", e);
+      throw e;
+    }
+    db.pragma('user_version = 7');
+    console.log("Database schema upgraded to version 7 for user notifications.");
+    schemaVersion = 7;
+  }
 }
 
 initializeSchema();
@@ -188,3 +213,4 @@ process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
 
 export default db;
+    

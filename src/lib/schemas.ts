@@ -94,10 +94,10 @@ export const UserRoleSchema = z.enum(['FREE', 'PREMIUM', 'PREMIUM_PLUS', 'ENDIUM
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export const UserRoleDisplayConfig: Record<UserRole, { label: string; className: string }> = {
-  FREE: { label: "Free Panda", className: "bg-gray-100 text-gray-700 border-gray-300" },
-  PREMIUM: { label: "Premium Panda", className: "bg-blue-100 text-blue-700 border-blue-300" },
-  PREMIUM_PLUS: { label: "Panda Premium+", className: "bg-purple-100 text-purple-700 border-purple-300" },
-  ENDIUM: { label: "Panda Endium", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  FREE: { label: "Free Panda", className: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-500" },
+  PREMIUM: { label: "Premium Panda", className: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-700 dark:text-blue-100 dark:border-blue-500" },
+  PREMIUM_PLUS: { label: "Panda Premium+", className: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-700 dark:text-purple-100 dark:border-purple-500" },
+  ENDIUM: { label: "Panda Endium", className: "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-600 dark:text-yellow-100 dark:border-yellow-500" },
   ADMIN: { label: "Admin Panda", className: "bg-destructive text-destructive-foreground border-destructive/50" },
 };
 
@@ -144,3 +144,25 @@ export const RolesConfig = {
     canCreateApiTokens: true,
   }
 } as const;
+
+export const NotificationTypeSchema = z.enum(['info', 'warning', 'success', 'error', 'command_update', 'admin_message', 'system']);
+export type NotificationType = z.infer<typeof NotificationTypeSchema>;
+
+export const NotificationSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  message: z.string().min(1, "Message cannot be empty."),
+  type: NotificationTypeSchema.default('info'),
+  link: z.string().url().optional().nullable(),
+  isRead: z.boolean().default(false),
+  createdAt: z.string().datetime(), // Should be ISO string
+  readAt: z.string().datetime().optional().nullable(),
+});
+export type Notification = z.infer<typeof NotificationSchema>;
+
+// For API responses, we might transform is_read from 0/1 to boolean
+export const NotificationDisplaySchema = NotificationSchema.extend({
+  isRead: z.boolean(),
+});
+export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
+    

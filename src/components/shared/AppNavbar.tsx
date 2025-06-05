@@ -3,10 +3,14 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint, UserCircle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
+import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint, UserCircle, Bell } from 'lucide-react';
+import { useState } from 'react';
 
 export default function AppNavbar() {
   const { user, logout, isCheckingAuthSession } = useAuth();
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   return (
     <header className="bg-card border-b sticky top-0 z-50">
@@ -16,7 +20,7 @@ export default function AppNavbar() {
           <h1 className="text-2xl font-headline font-bold">PANDA</h1>
         </Link>
         
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/search" className="flex items-center gap-1">
               <SearchIcon className="h-4 w-4" /> Search
@@ -24,15 +28,33 @@ export default function AppNavbar() {
           </Button>
 
           {isCheckingAuthSession ? (
-            <Button variant="ghost" size="sm" disabled>Loading...</Button>
+            <Button variant="ghost" size="icon" disabled className="h-9 w-9 rounded-full">
+                <Bell className="h-5 w-5" />
+            </Button>
           ) : user ? (
             <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+                    <Bell className="h-5 w-5" />
+                    {unreadNotificationsCount > 0 && (
+                      <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 sm:w-96 p-0" align="end">
+                  <NotificationsDropdown setUnreadCount={setUnreadNotificationsCount} />
+                </PopoverContent>
+              </Popover>
+
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dashboard" className="flex items-center gap-1">
                   <LayoutDashboard className="h-4 w-4" /> Dashboard
                 </Link>
               </Button>
-              {/* Removed /manager link as it's a less direct entry point now */}
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/settings/profile" className="flex items-center gap-1">
                   <UserCircle className="h-4 w-4" /> Settings
@@ -61,3 +83,4 @@ export default function AppNavbar() {
     </header>
   );
 }
+    
