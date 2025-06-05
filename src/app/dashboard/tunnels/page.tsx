@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PlusCircle, Globe, Edit3, Trash2, Server, Loader2, AlertTriangle, PackageSearch, DownloadCloud } from "lucide-react";
+import { PlusCircle, Globe, Edit3, Trash2, Server, Loader2, AlertTriangle, PackageSearch, DownloadCloud, Waypoints, Infinity as InfinityIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -18,6 +18,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { RolesConfig } from "@/lib/schemas";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+
 
 interface Service {
   id: string;
@@ -35,6 +38,10 @@ export default function TunnelsDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
+  const canCreateMoreTunnels = user ? userQuotaConfig.maxTunnels === Infinity || services.length < userQuotaConfig.maxTunnels : services.length < RolesConfig.FREE.maxTunnels;
+
 
   useEffect(() => {
     async function fetchServices() {
@@ -96,12 +103,29 @@ export default function TunnelsDashboardPage() {
             <h1 className="text-3xl font-headline font-bold">Mes Services Tunnels</h1>
             <p className="text-muted-foreground">Gérez, modifiez ou supprimez vos configurations de tunnels.</p>
         </div>
-        <Button asChild>
+        <Button asChild disabled={!canCreateMoreTunnels}>
           <Link href="/dashboard/register-service">
             <PlusCircle className="mr-2 h-5 w-5" /> Enregistrer un Nouveau Tunnel
           </Link>
         </Button>
       </div>
+      
+      <Alert variant="default" className="shadow-sm">
+        <Waypoints className="h-5 w-5" />
+        <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
+        <AlertDescription>
+          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les {" "}
+          {userQuotaConfig.maxTunnels === Infinity ? (
+            <span className="inline-flex items-center gap-1"><InfinityIcon className="h-4 w-4" /> autorisés (illimité)</span>
+          ) : (
+            <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong>
+          )}
+          {" "}autorisés pour votre grade {user?.role ? <Link href="/settings/profile" className="underline hover:text-primary">{RolesConfig[user.role].label}</Link> : RolesConfig.FREE.label}.
+          {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
+            <span className="text-destructive font-medium"> Vous avez atteint votre limite.</span>
+          )}
+        </AlertDescription>
+      </Alert>
 
       {error && (
         <Card className="bg-destructive/10 border-destructive">
@@ -123,11 +147,14 @@ export default function TunnelsDashboardPage() {
           </CardHeader>
           <CardContent className="flex flex-col items-center">
              <PackageSearch className="h-24 w-24 text-muted-foreground mb-6" />
-            <Button asChild size="lg">
+            <Button asChild size="lg" disabled={!canCreateMoreTunnels}>
               <Link href="/dashboard/register-service">
                 <PlusCircle className="mr-2 h-5 w-5" /> Enregistrer votre Premier Tunnel
               </Link>
             </Button>
+             {!canCreateMoreTunnels && (
+                 <p className="text-sm text-destructive mt-4">Vous avez atteint votre quota de tunnels pour votre grade actuel.</p>
+            )}
           </CardContent>
         </Card>
       )}

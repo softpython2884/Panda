@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Waypoints, Archive, Activity, ArrowRight, Loader2 } from "lucide-react"; // Changed Cloud to Archive
+import { Waypoints, Archive, Activity, ArrowRight, Loader2, Infinity as InfinityIcon, Gauge } from "lucide-react";
 import { useEffect, useState } from "react";
 import RoleBadge from "@/components/shared/RoleBadge";
+import { RolesConfig } from "@/lib/schemas";
 
 interface RecentService {
   id: string;
@@ -54,6 +55,7 @@ export default function DashboardOverviewPage() {
   };
   
   const displayName = getDisplayName();
+  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
 
   return (
     <div className="space-y-10">
@@ -116,12 +118,22 @@ export default function DashboardOverviewPage() {
             </CardFooter>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow opacity-80"> {/* Slightly increased opacity */}
+          <Card className="shadow-lg hover:shadow-xl transition-shadow opacity-80">
             <CardHeader>
-              <CardTitle className="font-headline text-xl flex items-center gap-2">
-                <Archive className="text-accent" /> {/* Changed icon */}
-                Mon Espace Cloud PANDA
-              </CardTitle>
+              <div className="flex justify-between items-start">
+                <CardTitle className="font-headline text-xl flex items-center gap-2">
+                  <Archive className="text-accent" /> 
+                  Mon Espace Cloud PANDA
+                </CardTitle>
+                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Gauge className="h-4 w-4" />
+                  {userQuotaConfig.maxCloudStorageGB === Infinity ? (
+                    <InfinityIcon className="h-4 w-4" />
+                  ) : (
+                    `${userQuotaConfig.maxCloudStorageGB} Go`
+                  )}
+                </div>
+              </div>
               <CardDescription>Stockage sécurisé et partage de fichiers. (Bientôt disponible !)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
 import { 
   LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, 
-  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, HardDrive, Server
+  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, Server, Infinity as InfinityIcon
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ interface NavGroup {
   items: NavItem[];
   defaultOpen?: boolean;
   groupIcon?: React.ElementType;
-  groupDescription?: string; 
+  groupDescription?: string; // Cette propriété est utilisée pour la description du groupe
 }
 
 const sidebarNavGroups: NavGroup[] = [
@@ -68,18 +68,19 @@ const sidebarNavGroups: NavGroup[] = [
     groupIcon: Cloud,
     items: [
       { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
-      { title: "Partage de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true }, // Icône changée pour DatabaseZap
+      { title: "Hébergement & Partage DB", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
       { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
     ],
   },
   {
     groupTitle: "Hébergement Spécialisé & DNS",
     groupIcon: Layers,
+    // groupDescription: "Services avancés (Grade ENDIUM requis)", // Supprimé comme demandé
     items: [
       { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
-      { title: "Gestion DNS", href: "/dashboard/dns-management", icon: Globe, soon: true, premiumFeature: true, endiumFeature: true }, // Premium pour sous-domaines, Endium pour domaines propres
+      { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Globe, soon: true, premiumFeature: true, endiumFeature: true },
       { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
-      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true }, // Icône changée pour Server
+      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true },
     ]
   },
   {
@@ -138,7 +139,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           <span className="truncate">{item.title}</span>
           {item.soon && <span className="ml-auto text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full whitespace-nowrap">Bientôt</span>}
           {item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full whitespace-nowrap">ENDIUM</span>}
-           {item.premiumFeature && !item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-blue-400 text-blue-900 px-2 py-0.5 rounded-full whitespace-nowrap">PREMIUM</span>}
+          {item.premiumFeature && !item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-blue-400 text-blue-900 px-2 py-0.5 rounded-full whitespace-nowrap">PREMIUM</span>}
         </Link>
       </Button>
     );
