@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { UserRoleSchema } from '@/lib/schemas';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod'; // Added z import here
 
 const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
 
@@ -12,14 +12,14 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
     return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
   }
 
-  const { userId: targetUserId } = params;
+  const { userId: targetUserId } = params; // Corrected: params is not a promise
   if (!targetUserId) {
     return NextResponse.json({ error: 'Target User ID is required' }, { status: 400 });
   }
 
   try {
     const body = await request.json();
-    const validationResult = z.object({ role: UserRoleSchema }).safeParse(body);
+    const validationResult = z.object({ role: UserRoleSchema }).safeParse(body); // z is now defined
 
     if (!validationResult.success) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
