@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
-import { LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound } from "lucide-react";
+import { LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Share2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,14 @@ const mainDashboardNavItems = [
   { title: "Aperçu", href: "/dashboard", icon: LayoutGrid },
   { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Waypoints },
   { title: "Mon Cloud", href: "/dashboard/cloud", icon: Cloud, disabled: false, soon: true },
+  { title: "SSH in Browser", href: "/dashboard/ssh-terminal", icon: TerminalSquare, disabled: false, soon: true },
+  { title: "Webmail", href: "/dashboard/webmail", icon: Mail, disabled: false, soon: true },
+  { title: "Intégrations Services", href: "/dashboard/integrations", icon: Puzzle, disabled: false, soon: true },
+  { title: "Partage de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, disabled: false, soon: true },
+  { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, disabled: false, soon: true },
+  { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: Network, disabled: false, soon: true },
+  { title: "Gestion DNS PANDA", href: "/dashboard/dns-management", icon: Globe, disabled: false, soon: true },
+  { title: "PANDA AI Studio", href: "/dashboard/ai-studio", icon: Sparkles, disabled: false, soon: true },
   { title: "Gestion API (Client)", href: "/dashboard/api-management", icon: KeyRound, disabled: false, soon: true },
 ];
 
