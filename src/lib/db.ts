@@ -134,9 +134,9 @@ function initializeSchema() {
         const adminUser = db.prepare('SELECT id FROM users WHERE email = ?').get(PANDA_ADMIN_EMAIL);
         if (adminUser) {
           db.prepare("UPDATE users SET role = 'ADMIN' WHERE id = ?").run((adminUser as any).id);
-          console.log(\`User \${PANDA_ADMIN_EMAIL} assigned ADMIN role.\`);
+          console.log('User ' + PANDA_ADMIN_EMAIL + ' assigned ADMIN role.');
         } else {
-          console.log(\`Admin email \${PANDA_ADMIN_EMAIL} not found, no user assigned ADMIN role automatically during migration.\`);
+          console.log('Admin email ' + PANDA_ADMIN_EMAIL + ' not found, no user assigned ADMIN role automatically during migration.');
         }
       } else {
         console.log("PANDA_ADMIN_EMAIL not set, no user assigned ADMIN role automatically during migration.");
@@ -155,20 +155,20 @@ function initializeSchema() {
 
   if (schemaVersion < 6) {
     try {
-      db.exec(\`
-        CREATE TABLE IF NOT EXISTS api_tokens (
-          id TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL,
-          name TEXT NOT NULL,
-          token_prefix TEXT NOT NULL UNIQUE, -- For quick lookup and to show to user
-          token_hash TEXT NOT NULL UNIQUE,   -- Hashed full token for security
-          scopes TEXT, -- JSON array of strings, e.g., ["read:service", "write:service"]
-          last_used_at DATETIME,
-          expires_at DATETIME,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-      \`);
+      db.exec(
+        'CREATE TABLE IF NOT EXISTS api_tokens (\n' +
+        '  id TEXT PRIMARY KEY,\n' +
+        '  user_id TEXT NOT NULL,\n' +
+        '  name TEXT NOT NULL,\n' +
+        '  token_prefix TEXT NOT NULL UNIQUE,\n' +
+        '  token_hash TEXT NOT NULL UNIQUE,\n' +
+        '  scopes TEXT,\n' +
+        '  last_used_at DATETIME,\n' +
+        '  expires_at DATETIME,\n' +
+        '  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n' +
+        '  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n' +
+        ');'
+      );
       console.log("Created api_tokens table (migration step for v6).");
     } catch (e) {
       console.error("Error creating api_tokens table:", e);
@@ -181,19 +181,19 @@ function initializeSchema() {
 
   if (schemaVersion < 7) {
     try {
-      db.exec(\`
-        CREATE TABLE IF NOT EXISTS notifications (
-          id TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL,
-          message TEXT NOT NULL,
-          type TEXT DEFAULT 'info' NOT NULL, -- e.g., info, warning, success, command_update, admin_message
-          link TEXT, -- Optional URL the notification links to
-          is_read INTEGER DEFAULT 0, -- 0 for false, 1 for true
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          read_at TEXT, -- Timestamp when the notification was read
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-      \`);
+      db.exec(
+        'CREATE TABLE IF NOT EXISTS notifications (\n' +
+        '  id TEXT PRIMARY KEY,\n' +
+        '  user_id TEXT NOT NULL,\n' +
+        '  message TEXT NOT NULL,\n' +
+        '  type TEXT DEFAULT \'info\' NOT NULL,\n' +
+        '  link TEXT,\n' +
+        '  is_read INTEGER DEFAULT 0,\n' +
+        '  created_at TEXT DEFAULT CURRENT_TIMESTAMP,\n' +
+        '  read_at TEXT,\n' +
+        '  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n' +
+        ');'
+      );
       console.log("Created notifications table (migration step for v7).");
     } catch (e) {
       console.error("Error creating notifications table:", e);
