@@ -16,10 +16,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Select only necessary fields for listing, or just 'id' if only count is needed by frontend.
-    // For now, returning more details in case the admin service management page needs them.
     const services = db.prepare(
-      'SELECT id, name, user_id, domain, type, public_url, created_at FROM services ORDER BY created_at DESC'
+      `SELECT 
+        s.id, s.name, s.description, s.public_url, s.domain, s.type, s.local_port, s.remote_port, s.created_at, s.user_id, u.email as user_email 
+       FROM services s
+       JOIN users u ON s.user_id = u.id
+       ORDER BY s.created_at DESC`
     ).all();
     return NextResponse.json({ services });
   } catch (error) {

@@ -18,15 +18,14 @@ import { UserProfileUpdateSchema, type UserProfileUpdateInput } from "@/lib/sche
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Mail } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Mail } from "lucide-react";
+import RoleBadge from "@/components/shared/RoleBadge";
 
 export default function UserProfileForm() {
   const { user, fetchUser, isCheckingAuthSession } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  // isFetchingProfile will be true if isCheckingAuthSession is true OR if user is not yet populated
   const [isFetchingProfile, setIsFetchingProfile] = useState(true);
 
   const form = useForm<UserProfileUpdateInput>({
@@ -47,10 +46,8 @@ export default function UserProfileForm() {
       });
       setIsFetchingProfile(false);
     } else if (!isCheckingAuthSession && !user) {
-      // Auth check is done, but no user (e.g., not logged in or error fetching)
       setIsFetchingProfile(false);
     }
-    // If isCheckingAuthSession is true, isFetchingProfile remains true
   }, [user, form, isCheckingAuthSession]);
 
 
@@ -59,17 +56,14 @@ export default function UserProfileForm() {
     try {
       const payload: Partial<UserProfileUpdateInput> = {};
       if (values.username && values.username !== user?.username) payload.username = values.username;
-      // Send empty strings as null for optional fields
       payload.firstName = values.firstName === "" ? null : values.firstName;
       payload.lastName = values.lastName === "" ? null : values.lastName;
       
-      // Ensure we only send fields that actually changed or are being set
       if (payload.firstName === user?.firstName) delete payload.firstName;
       if (payload.lastName === user?.lastName) delete payload.lastName;
 
-
-      if (Object.keys(payload).length === 0) {
-        toast({ title: "No Changes", description: "You haven't made any changes to your profile." });
+      if (Object.keys(payload).length === 0 && !(values.username && values.username !== user?.username)) {
+        toast({ title: "Aucun Changement", description: "Vous n'avez fait aucune modification à votre profil." });
         setIsLoading(false);
         return;
       }
@@ -83,49 +77,49 @@ export default function UserProfileForm() {
       const data = await response.json();
 
       if (response.ok) {
-        toast({ title: "Profile Updated", description: "Your profile information has been saved." });
-        await fetchUser(); // Refresh user context with updated data
+        toast({ title: "Profil Mis à Jour", description: "Vos informations de profil ont été sauvegardées." });
+        await fetchUser(); 
       } else {
-        toast({ title: "Update Failed", description: data.error || "Could not update profile.", variant: "destructive" });
+        toast({ title: "Échec de la Mise à Jour", description: data.error || "Impossible de mettre à jour le profil.", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Update Error", description: "An unexpected error occurred.", variant: "destructive" });
+      toast({ title: "Erreur de Mise à Jour", description: "Une erreur inattendue est survenue.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   }
   
-  // Display loader if either the auth session is being checked OR if form data hasn't been reset yet
   if (isCheckingAuthSession || isFetchingProfile) {
     return (
       <div className="flex items-center justify-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading profile...</p>
+        <p className="text-muted-foreground">Chargement du profil...</p>
       </div>
     );
   }
   
-  if (!user) { // Auth check done, but no user
+  if (!user) { 
     return (
          <Alert variant="destructive">
             <Mail className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>Could not load user profile. Please ensure you are logged in.</AlertDescription>
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>Impossible de charger le profil utilisateur. Veuillez vérifier que vous êtes connecté.</AlertDescription>
         </Alert>
     );
   }
 
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="space-y-2">
-            <FormLabel>Email</FormLabel>
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{user?.email}</span>
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{user?.email}</span>
+                </div>
+                {user?.role && <RoleBadge role={user.role} className="mt-2 sm:mt-0"/>}
             </div>
-            <FormDescription>Your email address cannot be changed here.</FormDescription>
+            <FormDescription>Votre adresse email ne peut pas être modifiée ici. Votre grade actuel est affiché ci-dessus.</FormDescription>
         </div>
 
         <FormField
@@ -133,11 +127,11 @@ export default function UserProfileForm() {
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username (Pseudo)</FormLabel>
+              <FormLabel>Pseudo (Nom d'utilisateur)</FormLabel>
               <FormControl>
-                <Input placeholder="YourUniqueUsername" {...field} />
+                <Input placeholder="VotrePseudoUnique" {...field} />
               </FormControl>
-              <FormDescription>This is your public display name. Must be unique.</FormDescription>
+              <FormDescription>C'est votre nom d'affichage public. Il doit être unique.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -148,9 +142,9 @@ export default function UserProfileForm() {
             name="firstName"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>Prénom</FormLabel>
                 <FormControl>
-                    <Input placeholder="Your first name (optional)" {...field} value={field.value ?? ''} />
+                    <Input placeholder="Votre prénom (optionnel)" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -161,9 +155,9 @@ export default function UserProfileForm() {
             name="lastName"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>Nom de Famille</FormLabel>
                 <FormControl>
-                    <Input placeholder="Your last name (optional)" {...field} value={field.value ?? ''} />
+                    <Input placeholder="Votre nom de famille (optionnel)" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -174,7 +168,7 @@ export default function UserProfileForm() {
         <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || !form.formState.isDirty}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
-          Save Changes
+          Sauvegarder les Changements
         </Button>
       </form>
     </Form>

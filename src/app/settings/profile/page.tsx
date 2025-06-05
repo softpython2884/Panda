@@ -6,8 +6,8 @@ export default function ProfileSettingsPage() {
   return (
     <Card className="shadow-lg max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">User Profile</CardTitle>
-        <CardDescription>Manage your personal information and account details.</CardDescription>
+        <CardTitle className="text-2xl font-headline">Mon Profil Utilisateur</CardTitle>
+        <CardDescription>Gérez vos informations personnelles et les détails de votre compte PANDA.</CardDescription>
       </CardHeader>
       <CardContent>
         <UserProfileForm />

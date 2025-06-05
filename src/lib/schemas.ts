@@ -93,12 +93,20 @@ export type ServiceInput = FrpServiceInput;
 export const UserRoleSchema = z.enum(['FREE', 'PREMIUM', 'PREMIUM_PLUS', 'ENDIUM', 'ADMIN']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
+export const UserRoleDisplayConfig: Record<UserRole, { label: string; className: string }> = {
+  FREE: { label: "Free Panda", className: "bg-gray-100 text-gray-700 border-gray-300" },
+  PREMIUM: { label: "Premium Panda", className: "bg-blue-100 text-blue-700 border-blue-300" },
+  PREMIUM_PLUS: { label: "Panda Premium+", className: "bg-purple-100 text-purple-700 border-purple-300" },
+  ENDIUM: { label: "Panda Endium", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  ADMIN: { label: "Admin Panda", className: "bg-destructive text-destructive-foreground border-destructive/50" },
+};
+
+
 export const API_TOKEN_SCOPES = ["service:read", "service:write", "profile:read"] as const; // Example scopes
 export type ApiTokenScope = typeof API_TOKEN_SCOPES[number];
 
 export const ApiTokenCreateSchema = z.object({
     name: z.string().min(3, "Token name must be at least 3 characters").max(50, "Token name too long"),
-    // scopes: z.array(z.enum(API_TOKEN_SCOPES)).min(1, "At least one scope is required"), // For simplicity, start without scopes
     expiresAt: z.date().optional().nullable(),
 });
 export type ApiTokenCreateInput = z.infer<typeof ApiTokenCreateSchema>;
@@ -107,10 +115,9 @@ export const ApiTokenDisplaySchema = z.object({
     id: z.string(),
     name: z.string(),
     tokenPrefix: z.string(),
-    // scopes: z.array(z.string()),
-    lastUsedAt: z.string().nullable(), // Store as ISO string from Date
-    expiresAt: z.string().nullable(), // Store as ISO string from Date
-    createdAt: z.string(), // Store as ISO string from Date
+    lastUsedAt: z.string().nullable(), 
+    expiresAt: z.string().nullable(), 
+    createdAt: z.string(), 
 });
 export type ApiTokenDisplay = z.infer<typeof ApiTokenDisplaySchema>;
 

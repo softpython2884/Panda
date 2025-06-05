@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Waypoints, Cloud, Activity, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import RoleBadge from "@/components/shared/RoleBadge";
 
-// TODO: Define a more specific type for recent services if needed
 interface RecentService {
   id: string;
   name: string;
@@ -58,11 +58,14 @@ export default function DashboardOverviewPage() {
   return (
     <div className="space-y-10">
       <section>
-        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-            Bonjour, {displayName}!
-          </span>
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 mb-3">
+            <h1 className="text-4xl md:text-5xl font-headline font-bold">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                Bonjour, {displayName}!
+            </span>
+            </h1>
+            {user && <RoleBadge role={user.role} className="mt-2 sm:mt-0 text-base px-3 py-1.5" />}
+        </div>
         <p className="text-xl text-muted-foreground">
           Bienvenue sur votre tableau de bord PANDA. Gérez vos services et explorez l'écosystème.
         </p>
@@ -125,7 +128,6 @@ export default function DashboardOverviewPage() {
               <p className="text-muted-foreground text-sm">
                 L'intégration du stockage cloud est en cours de développement. Revenez bientôt pour découvrir cette fonctionnalité !
               </p>
-              {/* Placeholder pour "derniers serveurs cloud utilisés" */}
               <div className="mt-4 p-3 bg-muted/50 rounded-md text-center">
                 <p className="text-sm text-muted-foreground italic">Aperçu des activités cloud à venir...</p>
               </div>
