@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
 import { 
   LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, 
-  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, HardDrive // Added Layers, HardDrive
+  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, HardDrive, Server
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
@@ -27,8 +27,8 @@ interface NavItem {
   disabled?: boolean;
   soon?: boolean;
   adminOnly?: boolean;
-  premiumFeature?: boolean; // For general premium features
-  endiumFeature?: boolean; // Specifically for ENDIUM grade features
+  premiumFeature?: boolean;
+  endiumFeature?: boolean; 
 }
 
 interface NavGroup {
@@ -36,7 +36,7 @@ interface NavGroup {
   items: NavItem[];
   defaultOpen?: boolean;
   groupIcon?: React.ElementType;
-  groupDescription?: string; // Optional description for the group
+  groupDescription?: string; 
 }
 
 const sidebarNavGroups: NavGroup[] = [
@@ -68,19 +68,18 @@ const sidebarNavGroups: NavGroup[] = [
     groupIcon: Cloud,
     items: [
       { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
-      { title: "Partage de BDD", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
+      { title: "Partage de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true }, // Icône changée pour DatabaseZap
       { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
     ],
   },
   {
     groupTitle: "Hébergement Spécialisé & DNS",
     groupIcon: Layers,
-    groupDescription: "Services avancés (Grade ENDIUM requis)",
     items: [
       { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
-      { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Globe, soon: true, endiumFeature: true },
+      { title: "Gestion DNS", href: "/dashboard/dns-management", icon: Globe, soon: true, premiumFeature: true, endiumFeature: true }, // Premium pour sous-domaines, Endium pour domaines propres
       { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
-      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: HardDrive, soon: true, endiumFeature: true },
+      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true }, // Icône changée pour Server
     ]
   },
   {
@@ -117,10 +116,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     if (item.adminOnly && (!user || user.role !== 'ADMIN')) {
         return null; 
     }
-    // Potential check for ENDIUM grade could be added here if we want to hide links,
-    // but for now, let's show them and the page itself will handle access/info.
-    // Example: if (item.endiumFeature && user?.role !== 'ENDIUM' && user?.role !== 'ADMIN') return null;
-
+    
     const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
     
     const LinkComponent = (
@@ -142,6 +138,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           <span className="truncate">{item.title}</span>
           {item.soon && <span className="ml-auto text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full whitespace-nowrap">Bientôt</span>}
           {item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full whitespace-nowrap">ENDIUM</span>}
+           {item.premiumFeature && !item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-blue-400 text-blue-900 px-2 py-0.5 rounded-full whitespace-nowrap">PREMIUM</span>}
         </Link>
       </Button>
     );

@@ -11,9 +11,9 @@ export default function CustomDomainsPage() {
   return (
     <div className="space-y-8 flex flex-col items-center justify-center text-center min-h-[calc(100vh-300px)]">
        <Construction className="h-24 w-24 text-primary mb-6" />
-      <h1 className="text-4xl font-headline font-bold text-primary">Enregistrement & Gestion de Domaines</h1>
+      <h1 className="text-4xl font-headline font-bold text-primary">Enregistrement & Gestion de Domaines Personnalisés</h1>
       <p className="text-xl text-muted-foreground max-w-2xl">
-        Cette section est en cours de développement. Elle permettra aux utilisateurs (grade <strong className="text-yellow-500">ENDIUM</strong> requis) d'enregistrer de nouveaux noms de domaine (ex: .fr, .com) ou de transférer et gérer des domaines existants via PANDA.
+        Cette section est en cours de développement. Elle permettra aux utilisateurs avec le grade <strong className="text-yellow-500">ENDIUM</strong> d'enregistrer de nouveaux noms de domaine (ex: .fr, .com) ou de transférer et gérer des domaines existants via PANDA.
       </p>
       <Card className="w-full max-w-lg mt-8 shadow-lg">
         <CardHeader>
