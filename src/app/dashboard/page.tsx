@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Waypoints, Cloud, Activity, ArrowRight, Loader2 } from "lucide-react";
+import { Waypoints, Archive, Activity, ArrowRight, Loader2 } from "lucide-react"; // Changed Cloud to Archive
 import { useEffect, useState } from "react";
 import RoleBadge from "@/components/shared/RoleBadge";
 
@@ -116,25 +116,34 @@ export default function DashboardOverviewPage() {
             </CardFooter>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow opacity-70">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow opacity-80"> {/* Slightly increased opacity */}
             <CardHeader>
               <CardTitle className="font-headline text-xl flex items-center gap-2">
-                <Cloud className="text-accent" />
-                Mon Espace Cloud
+                <Archive className="text-accent" /> {/* Changed icon */}
+                Mon Espace Cloud PANDA
               </CardTitle>
-              <CardDescription>Gérez vos fichiers et partages (Bientôt disponible!).</CardDescription>
+              <CardDescription>Stockage sécurisé et partage de fichiers. (Bientôt disponible !)</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <p className="text-muted-foreground text-sm">
-                L'intégration du stockage cloud est en cours de développement. Revenez bientôt pour découvrir cette fonctionnalité !
+                Imaginez pouvoir stocker vos configurations de service, partager des fichiers de projet critiques, et accéder à vos sauvegardes, le tout intégré et sécurisé au sein de PANDA.
               </p>
-              <div className="mt-4 p-3 bg-muted/50 rounded-md text-center">
-                <p className="text-sm text-muted-foreground italic">Aperçu des activités cloud à venir...</p>
+              <div className="mt-4 p-3 bg-muted/50 rounded-md">
+                <p className="text-sm font-semibold text-primary">Fonctionnalités à venir :</p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-0.5">
+                  <li>Stockage et organisation de fichiers.</li>
+                  <li>Partage de fichiers/dossiers avec d'autres utilisateurs PANDA.</li>
+                  <li>Liens de partage publics sécurisés.</li>
+                  <li>Accès à vos données de n'importe où.</li>
+                </ul>
               </div>
+               <p className="text-xs text-muted-foreground italic text-center pt-2">
+                Nous construisons un espace cloud robuste pour vos besoins !
+              </p>
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full" disabled>
-                <Link href="/dashboard/cloud">Accéder à mon Cloud <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/dashboard/cloud">Explorer mon Cloud (Prochainement) <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardFooter>
           </Card>
