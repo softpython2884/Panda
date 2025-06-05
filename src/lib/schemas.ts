@@ -125,7 +125,7 @@ export type ApiTokenDisplay = z.infer<typeof ApiTokenDisplaySchema>;
 export const RolesConfig = {
   FREE: {
     maxTunnels: 3,
-    maxCloudStorageGB: 1,
+    maxCloudServers: 1,
     maxApiAICallsPerDay: 100,
     canUseCustomDnsSubdomains: false,
     canUseOwnDomains: false,
@@ -135,7 +135,7 @@ export const RolesConfig = {
   },
   PREMIUM: {
     maxTunnels: 10,
-    maxCloudStorageGB: 10,
+    maxCloudServers: 3,
     maxApiAICallsPerDay: 1000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
@@ -145,7 +145,7 @@ export const RolesConfig = {
   },
   PREMIUM_PLUS: {
     maxTunnels: 25,
-    maxCloudStorageGB: 50,
+    maxCloudServers: Infinity,
     maxApiAICallsPerDay: 5000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
@@ -154,8 +154,8 @@ export const RolesConfig = {
     maxMiniServers: 5,
   },
   ENDIUM: {
-    maxTunnels: 100,
-    maxCloudStorageGB: 200,
+    maxTunnels: Infinity,
+    maxCloudServers: Infinity,
     maxApiAICallsPerDay: 20000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
@@ -165,7 +165,7 @@ export const RolesConfig = {
   },
   ADMIN: {
     maxTunnels: Infinity,
-    maxCloudStorageGB: Infinity,
+    maxCloudServers: Infinity,
     maxApiAICallsPerDay: Infinity,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,

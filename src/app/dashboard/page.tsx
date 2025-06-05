@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Waypoints, Archive, Activity, ArrowRight, Loader2, Infinity as InfinityIcon, Gauge } from "lucide-react";
+import { Waypoints, Archive, Activity, ArrowRight, Loader2, Infinity as InfinityIcon, Server } from "lucide-react"; // Changed Gauge to Server
 import { useEffect, useState } from "react";
 import RoleBadge from "@/components/shared/RoleBadge";
 import { RolesConfig } from "@/lib/schemas";
@@ -126,31 +126,31 @@ export default function DashboardOverviewPage() {
                   Mon Espace Cloud PANDA
                 </CardTitle>
                 <div className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Gauge className="h-4 w-4" />
-                  {userQuotaConfig.maxCloudStorageGB === Infinity ? (
+                  <Server className="h-4 w-4" />
+                  {userQuotaConfig.maxCloudServers === Infinity ? (
                     <InfinityIcon className="h-4 w-4" />
                   ) : (
-                    `${userQuotaConfig.maxCloudStorageGB} Go`
+                    `${userQuotaConfig.maxCloudServers} serveur(s)`
                   )}
                 </div>
               </div>
-              <CardDescription>Stockage sécurisé et partage de fichiers. (Bientôt disponible !)</CardDescription>
+              <CardDescription>Hébergez vos serveurs cloud personnels et partagez des fichiers. (Bientôt disponible !)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-muted-foreground text-sm">
-                Imaginez pouvoir stocker vos configurations de service, partager des fichiers de projet critiques, et accéder à vos sauvegardes, le tout intégré et sécurisé au sein de PANDA.
+                Imaginez pouvoir déployer vos propres instances cloud pour vos projets, avec un stockage illimité par serveur, et partager des fichiers de manière sécurisée.
               </p>
               <div className="mt-4 p-3 bg-muted/50 rounded-md">
                 <p className="text-sm font-semibold text-primary">Fonctionnalités à venir :</p>
                 <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-0.5">
-                  <li>Stockage et organisation de fichiers.</li>
+                  <li>Création et gestion de serveurs cloud.</li>
+                  <li>Stockage et organisation de fichiers par serveur.</li>
                   <li>Partage de fichiers/dossiers avec d'autres utilisateurs PANDA.</li>
                   <li>Liens de partage publics sécurisés.</li>
-                  <li>Accès à vos données de n'importe où.</li>
                 </ul>
               </div>
                <p className="text-xs text-muted-foreground italic text-center pt-2">
-                Nous construisons un espace cloud robuste pour vos besoins !
+                Nous construisons un espace cloud robuste et flexible pour vos besoins !
               </p>
             </CardContent>
             <CardFooter>
