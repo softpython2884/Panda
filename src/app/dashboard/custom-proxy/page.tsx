@@ -4,14 +4,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Network, Construction, Link2 as LinkIcon, Gauge, Infinity as InfinityIcon } from "lucide-react"; // Changed Link to LinkIcon
+import { Network, Construction, Link2 as LinkIcon, Gauge, Infinity as InfinityIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { RolesConfig } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
 
 export default function CustomProxyPage() {
   const { user } = useAuth();
-  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
+  const userRole = user?.role || 'FREE';
+  const userQuotaConfig = RolesConfig[userRole];
 
   return (
     <div className="space-y-8 flex flex-col items-center justify-center text-center min-h-[calc(100vh-300px)]">
@@ -36,10 +37,10 @@ export default function CustomProxyPage() {
        <Alert className="w-full max-w-md mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Proxys Personnalisés</AlertTitle>
-        <AlertDescription>
-          Votre grade actuel vous permet de configurer jusqu'à : {" "}
+        <AlertDescription className="inline-flex items-center gap-1">
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à : {" "}
           {userQuotaConfig.maxCustomProxies === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-primary"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxCustomProxies}</strong>
           )}

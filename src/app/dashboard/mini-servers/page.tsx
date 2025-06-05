@@ -7,11 +7,12 @@ import Link from "next/link";
 import { ServerCog, Construction, Container, Gauge, Infinity as InfinityIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { RolesConfig } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
 
 export default function MiniServersPage() {
   const { user } = useAuth();
-  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
+  const userRole = user?.role || 'FREE';
+  const userQuotaConfig = RolesConfig[userRole];
 
   return (
     <div className="space-y-8 flex flex-col items-center justify-center text-center min-h-[calc(100vh-300px)]">
@@ -36,10 +37,10 @@ export default function MiniServersPage() {
       <Alert className="w-full max-w-md mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Mini-Serveurs</AlertTitle>
-        <AlertDescription>
-          Votre grade actuel vous permet de déployer jusqu'à : {" "}
+        <AlertDescription className="inline-flex items-center gap-1">
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de déployer jusqu'à : {" "}
           {userQuotaConfig.maxMiniServers === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-primary"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong>
           )}

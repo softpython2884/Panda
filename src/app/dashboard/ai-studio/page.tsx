@@ -7,12 +7,14 @@ import Link from "next/link";
 import { Sparkles, Construction, BrainCircuit, Wand2, ShieldCheck, Gauge, Infinity as InfinityIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { RolesConfig } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
 
 
 export default function AiStudioPage() {
   const { user } = useAuth();
-  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
+  const userRole = user?.role || 'FREE';
+  const userQuotaConfig = RolesConfig[userRole];
+
 
   return (
     <div className="space-y-8 flex flex-col items-center justify-center text-center min-h-[calc(100vh-300px)]">
@@ -51,12 +53,12 @@ export default function AiStudioPage() {
       <Alert className="w-full max-w-lg mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
-        <AlertDescription>
-          Votre grade actuel vous donne droit à :{" "}
+        <AlertDescription className="inline-flex items-center gap-1">
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à : {" "}
           {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold"><InfinityIcon className="h-4 w-4 text-green-600" /> Appels Illimités / jour</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /> Appels / jour</span>
           ) : (
-            <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay} appels API AI / jour</strong>
+            <><strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong> appels API AI / jour</>
           )}
           . (Quota non encore actif)
         </AlertDescription>

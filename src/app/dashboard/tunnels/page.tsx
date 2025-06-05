@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { RolesConfig } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas"; // UserRoleDisplayConfig
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 
@@ -39,7 +39,8 @@ export default function TunnelsDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
+  const userRole = user?.role || 'FREE';
+  const userQuotaConfig = RolesConfig[userRole];
   const canCreateMoreTunnels = user ? userQuotaConfig.maxTunnels === Infinity || services.length < userQuotaConfig.maxTunnels : false;
 
 
@@ -116,11 +117,11 @@ export default function TunnelsDashboardPage() {
         <AlertDescription>
           Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les{" "}
           {userQuotaConfig.maxTunnels === Infinity ? (
-            <span className="inline-flex items-center gap-1 text-primary font-semibold"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong>
           )}
-          {" "}autorisés pour votre grade {user?.role ? <Link href="/settings/profile" className="underline hover:text-primary">{RolesConfig[user.role].label}</Link> : RolesConfig.FREE.label}.
+          {" "}autorisés pour votre grade {UserRoleDisplayConfig[userRole].label}.
           {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
             <span className="text-destructive font-medium"> Vous avez atteint votre limite.</span>
           )}

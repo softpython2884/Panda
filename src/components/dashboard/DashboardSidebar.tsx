@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
 import { 
   LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, 
-  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, Server, Infinity as InfinityIcon
+  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, Server, Wifi, HardDrive
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
@@ -27,8 +27,9 @@ interface NavItem {
   disabled?: boolean;
   soon?: boolean;
   adminOnly?: boolean;
-  premiumFeature?: boolean;
-  endiumFeature?: boolean; 
+  premiumFeature?: boolean; // For Premium and above
+  premiumPlusFeature?: boolean; // For Premium+ and above
+  endiumFeature?: boolean; // For Endium and above
 }
 
 interface NavGroup {
@@ -36,55 +37,48 @@ interface NavGroup {
   items: NavItem[];
   defaultOpen?: boolean;
   groupIcon?: React.ElementType;
-  groupDescription?: string; // Cette propriété est utilisée pour la description du groupe
 }
 
 const sidebarNavGroups: NavGroup[] = [
   {
-    groupTitle: "Navigation Principale",
+    groupTitle: "Tableau de Bord",
     groupIcon: LayoutGrid,
     defaultOpen: true,
     items: [
       { title: "Aperçu", href: "/dashboard", icon: LayoutGrid },
-      { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Waypoints },
     ],
   },
   {
-    groupTitle: "Accès & Outils Distants",
-    groupIcon: TerminalSquare,
+    groupTitle: "Mes Services PANDA",
+    groupIcon: Server, // Changed icon
     items: [
+      { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Waypoints },
+      { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
+      { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
+      { title: "Machines Virtuelles", href: "/dashboard/virtual-machines", icon: HardDrive, soon: true, endiumFeature: true },
+      { title: "Bases de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
+    ],
+  },
+  {
+    groupTitle: "Connectivité & Accès Réseau",
+    groupIcon: Network,
+    items: [
+      { title: "PANDA VPN", href: "/dashboard/vpn", icon: Wifi, soon: true, premiumFeature: true, premiumPlusFeature: true, endiumFeature: true },
+      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: LinkIcon, soon: true },
       { title: "SSH in Browser", href: "/dashboard/ssh-terminal", icon: TerminalSquare, soon: true },
     ],
   },
   {
-    groupTitle: "Connectivité & Réseau",
-    groupIcon: Network,
+    groupTitle: "Domaines & DNS",
+    groupIcon: Globe, // Changed icon
     items: [
-      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: LinkIcon, soon: true },
-    ],
-  },
-  {
-    groupTitle: "Hébergement & Cloud Simple",
-    groupIcon: Cloud,
-    items: [
-      { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
-      { title: "Hébergement & Partage DB", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
-      { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
-    ],
-  },
-  {
-    groupTitle: "Hébergement Spécialisé & DNS",
-    groupIcon: Layers,
-    // groupDescription: "Services avancés (Grade ENDIUM requis)", // Supprimé comme demandé
-    items: [
-      { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
-      { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Globe, soon: true, premiumFeature: true, endiumFeature: true },
       { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
-      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true },
+      { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Layers, soon: true, premiumFeature: true, endiumFeature: true },
+      { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
     ]
   },
   {
-    groupTitle: "Développement & Intégrations",
+    groupTitle: "Outils Développeur & IA",
     groupIcon: Sparkles,
     items: [
       { title: "PANDA AI Studio", href: "/dashboard/ai-studio", icon: Sparkles, soon: true },
@@ -120,6 +114,23 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     
     const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
     
+    let badgeText = item.soon ? "Bientôt" : null;
+    let badgeClass = item.soon ? "bg-accent text-accent-foreground" : "";
+
+    if (!badgeText) {
+        if (item.endiumFeature) {
+            badgeText = "ENDIUM";
+            badgeClass = "bg-yellow-400 text-yellow-900";
+        } else if (item.premiumPlusFeature) {
+            badgeText = "PREMIUM+";
+            badgeClass = "bg-purple-400 text-purple-900";
+        } else if (item.premiumFeature) {
+            badgeText = "PREMIUM";
+            badgeClass = "bg-blue-400 text-blue-900";
+        }
+    }
+
+
     const LinkComponent = (
       <Button
         key={itemKey}
@@ -137,9 +148,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
         <Link href={item.disabled ? "#" : item.href}>
           <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
           <span className="truncate">{item.title}</span>
-          {item.soon && <span className="ml-auto text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full whitespace-nowrap">Bientôt</span>}
-          {item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full whitespace-nowrap">ENDIUM</span>}
-          {item.premiumFeature && !item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-blue-400 text-blue-900 px-2 py-0.5 rounded-full whitespace-nowrap">PREMIUM</span>}
+          {badgeText && <span className={cn("ml-auto text-xs px-2 py-0.5 rounded-full whitespace-nowrap", badgeClass)}>{badgeText}</span>}
         </Link>
       </Button>
     );
@@ -157,7 +166,6 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
               <div className="flex items-center gap-2">
                 {group.groupIcon && <group.groupIcon className="h-5 w-5 text-muted-foreground group-data-[state=open]:text-primary transition-colors" />}
                 <span>{group.groupTitle}</span>
-                 {group.groupDescription && <span className="text-xs text-muted-foreground font-normal ml-1">({group.groupDescription})</span>}
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-0 pl-3 pr-1 space-y-1">
@@ -192,3 +200,4 @@ export default function DashboardSidebar({ isMobileView, setIsOpen }: DashboardS
     </div>
   );
 }
+

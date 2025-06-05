@@ -126,12 +126,13 @@ export const RolesConfig = {
   FREE: {
     label: "Free Panda",
     maxTunnels: 2,
-    maxCloudServers: 1,
+    maxCloudServers: 1, // Each server has unlimited storage
     maxCustomProxies: 1,
     maxMiniServers: 1,
     maxApiAICallsPerDay: 100,
-    canUseCustomDnsSubdomains: false,
-    canUseOwnDomains: false,
+    maxVpnConnections: 0, // 0 for no access, 1 for basic, etc.
+    canUseCustomDnsSubdomains: false, // For *.pandadns.nationquest.fr
+    canUseOwnDomains: false, // For custom domains like .fr, .com
     canUseWebmail: false,
     canUseVMs: false,
   },
@@ -142,6 +143,7 @@ export const RolesConfig = {
     maxCustomProxies: 3,
     maxMiniServers: 3,
     maxApiAICallsPerDay: 1000,
+    maxVpnConnections: 1, // Basic VPN access
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -154,6 +156,7 @@ export const RolesConfig = {
     maxCustomProxies: 5,
     maxMiniServers: 5,
     maxApiAICallsPerDay: 5000,
+    maxVpnConnections: 1, // Super Secure VPN access
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -166,6 +169,7 @@ export const RolesConfig = {
     maxCustomProxies: 10,
     maxMiniServers: 10,
     maxApiAICallsPerDay: 20000,
+    maxVpnConnections: 1, // Enterprise VPN access
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
@@ -178,6 +182,7 @@ export const RolesConfig = {
     maxCustomProxies: Infinity,
     maxMiniServers: Infinity,
     maxApiAICallsPerDay: Infinity,
+    maxVpnConnections: Infinity,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
@@ -205,3 +210,4 @@ export const NotificationDisplaySchema = NotificationSchema.extend({
   isRead: z.boolean(),
 });
 export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
+
