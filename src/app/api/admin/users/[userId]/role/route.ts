@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { UserRoleSchema } from '@/lib/schemas';
-import { z, ZodError } from 'zod'; // Added z import here
+import { z, ZodError } from 'zod'; // Assurez-vous que z est importé
 
 const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
 
@@ -12,21 +12,21 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
     return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
   }
 
-  const { userId: targetUserId } = params; // Corrected: params is not a promise
+  const { userId: targetUserId } = params; // params est un objet direct, pas une promesse
   if (!targetUserId) {
     return NextResponse.json({ error: 'Target User ID is required' }, { status: 400 });
   }
 
   try {
     const body = await request.json();
-    const validationResult = z.object({ role: UserRoleSchema }).safeParse(body); // z is now defined
+    const validationResult = z.object({ role: UserRoleSchema }).safeParse(body);
 
     if (!validationResult.success) {
       return NextResponse.json({ error: 'Invalid input', details: validationResult.error.flatten() }, { status: 400 });
     }
     const { role } = validationResult.data;
 
-    const sessionToken = (await request.cookies.get('panda_session_token'))?.value;
+    const sessionToken = request.cookies.get('panda_session_token')?.value;
     if (!sessionToken) {
         return NextResponse.json({ error: 'Session token missing for Pod request' }, { status: 401 });
     }
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionToken}`, // Pass admin's session token
+        'Authorization': `Bearer ${sessionToken}`, 
       },
       body: JSON.stringify({ role }),
     });

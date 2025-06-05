@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyToken, type AuthenticatedUser } from '@/lib/auth';
 import { UserRoleSchema } from '@/lib/schemas';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod'; // Assurez-vous que z est importé
 
 export async function PUT(request: NextRequest, { params }: { params: { userId: string } }) {
   const authHeader = request.headers.get('Authorization');
@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
     return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
   }
 
-  const { userId: targetUserId } = params;
+  const { userId: targetUserId } = params; // params est un objet direct, pas une promesse
   if (!targetUserId) {
     return NextResponse.json({ error: 'Target User ID is required' }, { status: 400 });
   }
@@ -31,13 +31,9 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
     }
     const { role: newRole } = validationResult.data;
     
-    // Prevent admin from accidentally removing their own admin role via this specific endpoint
-    // Or prevent changing role of the primary admin email if defined
-    // This logic can be enhanced
     if (targetUserId === decodedAdminUser.id && newRole !== 'ADMIN') {
         return NextResponse.json({ error: 'Admins cannot demote themselves via this endpoint.' }, { status: 403 });
     }
-
 
     const result = db.prepare(
       'UPDATE users SET role = ? WHERE id = ?'
