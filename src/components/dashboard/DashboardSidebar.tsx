@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
 import { 
   LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, 
-  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon // Renamed Link to LinkIcon
+  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon, Layers, HardDrive // Added Layers, HardDrive
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ interface NavItem {
   disabled?: boolean;
   soon?: boolean;
   adminOnly?: boolean;
+  premiumFeature?: boolean; // For general premium features
+  endiumFeature?: boolean; // Specifically for ENDIUM grade features
 }
 
 interface NavGroup {
@@ -34,6 +36,7 @@ interface NavGroup {
   items: NavItem[];
   defaultOpen?: boolean;
   groupIcon?: React.ElementType;
+  groupDescription?: string; // Optional description for the group
 }
 
 const sidebarNavGroups: NavGroup[] = [
@@ -51,29 +54,38 @@ const sidebarNavGroups: NavGroup[] = [
     groupIcon: TerminalSquare,
     items: [
       { title: "SSH in Browser", href: "/dashboard/ssh-terminal", icon: TerminalSquare, soon: true },
-      { title: "Webmail", href: "/dashboard/webmail", icon: Mail, soon: true },
     ],
   },
   {
     groupTitle: "Connectivité & Réseau",
     groupIcon: Network,
     items: [
-      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: LinkIcon, soon: true }, 
-      { title: "Gestion DNS PANDA", href: "/dashboard/dns-management", icon: Globe, soon: true },
+      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: LinkIcon, soon: true },
     ],
   },
   {
-    groupTitle: "Hébergement & Services Cloud", // Changed from "Hébergement & Cloud" for consistency with other titles
+    groupTitle: "Hébergement & Cloud Simple",
     groupIcon: Cloud,
     items: [
-      { title: "Mon Cloud", href: "/dashboard/cloud", icon: Cloud, soon: true },
-      { title: "Partage de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
+      { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
+      { title: "Partage de BDD", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
       { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
     ],
   },
   {
-    groupTitle: "Développement & Intégrations", // Changed from "Développement & IA" to be more encompassing
-    groupIcon: Sparkles, // Sparkles can still represent innovation/development
+    groupTitle: "Hébergement Spécialisé & DNS",
+    groupIcon: Layers,
+    groupDescription: "Services avancés (Grade ENDIUM requis)",
+    items: [
+      { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
+      { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Globe, soon: true, endiumFeature: true },
+      { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
+      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: HardDrive, soon: true, endiumFeature: true },
+    ]
+  },
+  {
+    groupTitle: "Développement & Intégrations",
+    groupIcon: Sparkles,
     items: [
       { title: "PANDA AI Studio", href: "/dashboard/ai-studio", icon: Sparkles, soon: true },
       { title: "Intégrations Services", href: "/dashboard/integrations", icon: Puzzle, soon: true },
@@ -105,6 +117,10 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     if (item.adminOnly && (!user || user.role !== 'ADMIN')) {
         return null; 
     }
+    // Potential check for ENDIUM grade could be added here if we want to hide links,
+    // but for now, let's show them and the page itself will handle access/info.
+    // Example: if (item.endiumFeature && user?.role !== 'ENDIUM' && user?.role !== 'ADMIN') return null;
+
     const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
     
     const LinkComponent = (
@@ -125,6 +141,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
           <span className="truncate">{item.title}</span>
           {item.soon && <span className="ml-auto text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full whitespace-nowrap">Bientôt</span>}
+          {item.endiumFeature && !item.soon && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full whitespace-nowrap">ENDIUM</span>}
         </Link>
       </Button>
     );
@@ -142,6 +159,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
               <div className="flex items-center gap-2">
                 {group.groupIcon && <group.groupIcon className="h-5 w-5 text-muted-foreground group-data-[state=open]:text-primary transition-colors" />}
                 <span>{group.groupTitle}</span>
+                 {group.groupDescription && <span className="text-xs text-muted-foreground font-normal ml-1">({group.groupDescription})</span>}
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-0 pl-3 pr-1 space-y-1">
@@ -169,7 +187,6 @@ interface DashboardSidebarProps {
 export default function DashboardSidebar({ isMobileView, setIsOpen }: DashboardSidebarProps) {
   return (
     <div className="flex flex-col h-full bg-card"> 
-      {/* Removed the redundant header from here as it's now in DashboardLayout for mobile */}
       <DashboardSidebarNav 
         isMobile={isMobileView} 
         onLinkClick={isMobileView && setIsOpen ? () => setIsOpen(false) : undefined}

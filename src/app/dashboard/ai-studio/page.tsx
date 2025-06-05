@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Sparkles, Construction, BrainCircuit, Wand2 } from "lucide-react";
+import { Sparkles, Construction, BrainCircuit, Wand2, ShieldLock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AiStudioPage() {
@@ -13,27 +13,32 @@ export default function AiStudioPage() {
        <Construction className="h-24 w-24 text-primary mb-6" />
       <h1 className="text-4xl font-headline font-bold text-primary">PANDA AI Studio</h1>
       <p className="text-xl text-muted-foreground max-w-2xl">
-        Cette section est en cours de développement. Accédez à des outils et API d'Intelligence Artificielle, avec gestion de quotas.
+        Cette section est en cours de développement. Accédez à une API PANDA AI pour intégrer des capacités d'IA dans vos applications.
       </p>
       <Card className="w-full max-w-lg mt-8 shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline">Bientôt Disponible</CardTitle>
-          <CardDescription>Utilisez des modèles d'IA pour la génération de texte, d'images, et plus encore.</CardDescription>
+          <CardTitle className="font-headline">Bientôt Disponible: API PANDA AI</CardTitle>
+          <CardDescription>Utilisez des modèles d'IA personnalisables pour des usages personnels ou professionnels, hébergés sur nos serveurs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <BrainCircuit className="h-16 w-16 text-accent mx-auto mb-4" />
            <Alert variant="default">
             <Wand2 className="h-5 w-5" />
-            <AlertTitle>Fonctionnalités Prévues</AlertTitle>
+            <AlertTitle>Capacités de l'API PANDA AI</AlertTitle>
             <AlertDescription>
-                Vous pourrez utiliser une API PANDA AI pour intégrer des fonctionnalités d'IA dans vos propres applications.
-                Un système de quotas sera mis en place, potentiellement lié à votre grade utilisateur, pour gérer l'utilisation de l'API.
-                L'API PANDA AI agira comme un intermédiaire, transférant les requêtes à des modèles d'IA sous-jacents après vérification des quotas.
+                L'API PANDA AI vous permettra d'accéder à divers modèles d'intelligence artificielle (texte, image, etc.).
+                Les modèles pourront être personnalisés pour des besoins spécifiques.
+                Un système de quotas, potentiellement lié à votre grade utilisateur, gérera l'utilisation de l'API.
             </AlertDescription>
           </Alert>
-          <p className="text-sm text-muted-foreground">
-            Nous explorons l'intégration de Genkit pour offrir une expérience IA flexible.
-          </p>
+           <Alert variant="default" className="mt-4">
+            <ShieldLock className="h-5 w-5" />
+            <AlertTitle>Confidentialité des Données</AlertTitle>
+            <AlertDescription>
+                Toutes les interactions avec l'API PANDA AI sont traitées sur nos serveurs.
+                Conformément à notre engagement de confidentialité pour tous nos services PANDA, aucune de vos données ou conversations n'est sauvegardée par nous après le traitement de votre requête.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
