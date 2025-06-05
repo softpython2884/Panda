@@ -1,13 +1,15 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, FRP_SERVER_ADDR } from '@/lib/schemas';
+import { ServiceSchema, FRP_SERVER_BASE_DOMAIN, PANDA_TUNNEL_MAIN_HOST, FRP_SERVER_ADDR, RolesConfig } from '@/lib/schemas';
 import { AuthenticatedUser, verifyToken } from '@/lib/auth';
 import { ZodError } from 'zod';
 import { createUserNotification } from '@/lib/notificationsHelper';
 
 export async function POST(request: NextRequest) {
   let userId: string | null = null;
+  let userRole: AuthenticatedUser['role'] | null = null;
+
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,10 +18,18 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7);
     const decodedUser = await verifyToken<AuthenticatedUser>(token);
 
-    if (!decodedUser || !decodedUser.id) {
+    if (!decodedUser || !decodedUser.id || !decodedUser.role) {
       return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });
     }
     userId = decodedUser.id;
+    userRole = decodedUser.role;
+
+    // Check quota
+    const userServicesCount = db.prepare('SELECT COUNT(*) as count FROM services WHERE user_id = ?').get(userId) as { count: number };
+    const quotaConfig = RolesConfig[userRole] || RolesConfig.FREE;
+    if (quotaConfig.maxTunnels !== Infinity && userServicesCount.count >= quotaConfig.maxTunnels) {
+      return NextResponse.json({ error: 'Tunnel quota reached for your current grade. Please upgrade or remove existing tunnels.' }, { status: 403 });
+    }
 
     const body = await request.json();
     const validationResult = ServiceSchema.safeParse(body);

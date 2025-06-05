@@ -5,12 +5,50 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint, UserCircle, Bell } from 'lucide-react';
-import { useState } from 'react';
+import { Home, Search as SearchIcon, LogIn, UserPlus, LayoutDashboard, LogOut, Settings, PawPrint, UserCircle, Bell, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AppNavbar() {
   const { user, logout, isCheckingAuthSession } = useAuth();
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const { toast } = useToast();
+
+  const fetchNotificationCount = useCallback(async () => {
+    if (!user) {
+      setUnreadNotificationsCount(0);
+      return;
+    }
+    setIsLoadingNotifications(true);
+    try {
+      const response = await fetch('/api/notifications'); // This endpoint returns { notifications, unreadCount }
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadNotificationsCount(data.unreadCount || 0);
+      } else {
+        // Do not toast error here to avoid spamming, error handled in dropdown
+        setUnreadNotificationsCount(0);
+      }
+    } catch (error) {
+      // console.error("Failed to fetch notification count for navbar:", error);
+      setUnreadNotificationsCount(0);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotificationCount();
+      // Optional: set an interval to poll for notification count, e.g., every 1 minute
+      // const intervalId = setInterval(fetchNotificationCount, 60000);
+      // return () => clearInterval(intervalId);
+    } else {
+      setUnreadNotificationsCount(0); // Reset count if user logs out
+    }
+  }, [user, fetchNotificationCount]);
+
 
   return (
     <header className="bg-card border-b sticky top-0 z-50">
@@ -28,9 +66,7 @@ export default function AppNavbar() {
           </Button>
 
           {isCheckingAuthSession ? (
-            <Button variant="ghost" size="icon" disabled className="h-9 w-9 rounded-full">
-                <Bell className="h-5 w-5" />
-            </Button>
+             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : user ? (
             <>
               <Button variant="ghost" size="sm" asChild>
@@ -43,11 +79,11 @@ export default function AppNavbar() {
                   <UserCircle className="h-4 w-4" /> Settings
                 </Link>
               </Button>
-              <Popover>
+              <Popover onOpenChange={(open) => { if (open) fetchNotificationCount(); /* Refresh on open */ }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-                    <Bell className="h-5 w-5" />
-                    {unreadNotificationsCount > 0 && (
+                    {isLoadingNotifications ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
+                    {!isLoadingNotifications && unreadNotificationsCount > 0 && (
                       <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>

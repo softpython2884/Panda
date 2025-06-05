@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Sparkles, Construction, BrainCircuit, Wand2, ShieldCheck, Gauge, Infinity as InfinityIcon } from "lucide-react"; // Changed ShieldLock to ShieldCheck
+import { Sparkles, Construction, BrainCircuit, Wand2, ShieldCheck, Gauge, Infinity as InfinityIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig } from "@/lib/schemas";
@@ -38,7 +38,7 @@ export default function AiStudioPage() {
             </AlertDescription>
           </Alert>
            <Alert variant="default" className="mt-4">
-            <ShieldCheck className="h-5 w-5" /> {/* Corrected Icon */}
+            <ShieldCheck className="h-5 w-5" />
             <AlertTitle>Confidentialité des Données</AlertTitle>
             <AlertDescription>
                 Toutes les interactions avec l'API PANDA AI sont traitées sur nos serveurs.
@@ -52,13 +52,13 @@ export default function AiStudioPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
         <AlertDescription>
-          Votre grade actuel vous donne droit à : {" "}
+          Votre grade actuel vous donne droit à :{" "}
           {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold"><InfinityIcon className="h-4 w-4" /> Appels Illimités / jour</span>
+            <span className="inline-flex items-center gap-1 font-semibold"><InfinityIcon className="h-4 w-4 text-green-600" /> Appels Illimités / jour</span>
           ) : (
-            <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong>
+            <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay} appels API AI / jour</strong>
           )}
-          {" "} appels API AI par jour. (Quota non encore actif)
+          . (Quota non encore actif)
         </AlertDescription>
       </Alert>
 

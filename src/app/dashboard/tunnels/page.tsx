@@ -40,7 +40,7 @@ export default function TunnelsDashboardPage() {
   const { toast } = useToast();
 
   const userQuotaConfig = user ? RolesConfig[user.role] : RolesConfig.FREE;
-  const canCreateMoreTunnels = user ? userQuotaConfig.maxTunnels === Infinity || services.length < userQuotaConfig.maxTunnels : services.length < RolesConfig.FREE.maxTunnels;
+  const canCreateMoreTunnels = user ? userQuotaConfig.maxTunnels === Infinity || services.length < userQuotaConfig.maxTunnels : false;
 
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function TunnelsDashboardPage() {
         <Waypoints className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
         <AlertDescription>
-          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les {" "}
+          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les{" "}
           {userQuotaConfig.maxTunnels === Infinity ? (
             <span className="inline-flex items-center gap-1 text-primary font-semibold"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
           ) : (
@@ -152,7 +152,7 @@ export default function TunnelsDashboardPage() {
                 <PlusCircle className="mr-2 h-5 w-5" /> Enregistrer votre Premier Tunnel
               </Link>
             </Button>
-             {!canCreateMoreTunnels && (
+             {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
                  <p className="text-sm text-destructive mt-4">Vous avez atteint votre quota de tunnels pour votre grade actuel.</p>
             )}
           </CardContent>
@@ -171,7 +171,7 @@ export default function TunnelsDashboardPage() {
                 <CardDescription className="flex items-center gap-1 text-sm pt-1">
                   <Globe className="h-4 w-4 text-primary" />
                   <a 
-                    href={service.public_url}
+                    href={service.public_url.startsWith('http') ? service.public_url : `http://${service.public_url}`}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-primary hover:underline hover:text-accent transition-colors truncate"
@@ -224,3 +224,4 @@ export default function TunnelsDashboardPage() {
     </div>
   );
 }
+
