@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 const adminSidebarNavItems = [
   { title: "Admin Dashboard", href: "/admin", icon: ShieldCheck },
   { title: "User Management", href: "/admin/users", icon: Users },
-  // { title: "Service Management", href: "/admin/services", icon: Server },
+  { title: "Service Management", href: "/admin/services", icon: Server },
   // { title: "System Settings", href: "/admin/settings", icon: Settings },
   // { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];

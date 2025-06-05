@@ -165,7 +165,7 @@ export default function ClientConfigPage() {
   }, [serviceId, toast]);
 
   const handleCopyToClipboard = (text: string, label: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (typeof window !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
         .then(() => toast({ title: "Copié !", description: `${label} copié dans le presse-papiers.` }))
         .catch((err) => {
@@ -173,8 +173,13 @@ export default function ClientConfigPage() {
             toast({ title: "Échec de la copie", description: `Impossible de copier ${label}. Veuillez copier manuellement.`, variant: "destructive" })
         });
     } else {
-        toast({ title: "Copie non disponible", description: `L'accès au presse-papiers n'est pas disponible dans ce contexte (ex: non-HTTPS). Veuillez copier ${label} manuellement.`, variant: "destructive" });
-        console.warn("navigator.clipboard.writeText is not available for insecure contexts or if the browser does not support it.");
+        toast({ 
+            title: "Copie non disponible", 
+            description: `L'accès au presse-papiers n'est pas disponible dans ce contexte (ex: non-HTTPS). Veuillez copier ${label} manuellement.`, 
+            variant: "destructive",
+            duration: 7000
+        });
+        console.warn("navigator.clipboard.writeText is not available. This usually happens in non-HTTPS contexts or if the browser does not support it.");
     }
   };
 

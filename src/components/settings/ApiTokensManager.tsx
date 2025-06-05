@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, PlusCircle, Trash2, Copy, Eye, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Loader2, PlusCircle, Trash2, Copy, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ApiTokenCreateSchema, type ApiTokenCreateInput, type ApiTokenDisplay } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
@@ -121,11 +121,22 @@ export default function ApiTokensManager() {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({ title: "Copié!", description: "Token copié dans le presse-papiers." });
-    }).catch(err => {
-      toast({ title: "Échec", description: "Impossible de copier le token.", variant: "destructive" });
-    });
+    if (typeof window !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast({ title: "Copié!", description: "Token copié dans le presse-papiers." });
+      }).catch(err => {
+        console.error("Failed to copy to clipboard:", err);
+        toast({ title: "Échec", description: "Impossible de copier le token. Veuillez copier manuellement.", variant: "destructive" });
+      });
+    } else {
+      toast({ 
+        title: "Copie non disponible", 
+        description: "L'accès au presse-papiers n'est pas disponible dans ce contexte (ex: non-HTTPS). Veuillez copier le token manuellement.", 
+        variant: "destructive", 
+        duration: 7000 
+      });
+      console.warn("navigator.clipboard.writeText is not available. This usually happens in non-HTTPS contexts or if the browser does not support it.");
+    }
   };
 
   return (
