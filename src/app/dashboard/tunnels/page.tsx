@@ -116,7 +116,7 @@ export default function TunnelsDashboardPage() {
         <AlertDescription>
           Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les {" "}
           {userQuotaConfig.maxTunnels === Infinity ? (
-            <span className="inline-flex items-center gap-1"><InfinityIcon className="h-4 w-4" /> autorisés (illimité)</span>
+            <span className="inline-flex items-center gap-1 text-primary font-semibold"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong>
           )}

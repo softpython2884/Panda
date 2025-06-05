@@ -84,8 +84,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, email, password: passwordInput }),
       });
       const data = await res.json();
-      if (res.ok) {
-        return true; 
+      if (res.ok && data.user) {
+        // Auto-login the user after successful registration
+        setUser(data.user);
+        const displayName = data.user.username || data.user.email;
+        toast({ title: "Registration Successful", description: `Welcome, ${displayName}! Your account is created and you are now logged in.` });
+        return true;
       } else {
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
         return false;

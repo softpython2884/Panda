@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction, Share2, Gauge, Infinity as InfinityIcon, Server } from "lucide-react";
+import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon } from "lucide-react"; // Gauge removed, Server kept
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig } from "@/lib/schemas";
@@ -39,7 +39,7 @@ export default function CloudDashboardPage() {
         <AlertDescription>
           Votre grade actuel vous permet de créer jusqu'à : {" "}
           {userQuotaConfig.maxCloudServers === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold"><InfinityIcon className="h-4 w-4" /> Nombre Illimité de serveurs cloud</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-primary"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxCloudServers} serveur(s) cloud</strong>
           )}

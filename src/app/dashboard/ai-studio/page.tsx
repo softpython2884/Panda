@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Sparkles, Construction, BrainCircuit, Wand2, ShieldLock, Gauge, Infinity as InfinityIcon } from "lucide-react";
+import { Sparkles, Construction, BrainCircuit, Wand2, ShieldCheck, Gauge, Infinity as InfinityIcon } from "lucide-react"; // Changed ShieldLock to ShieldCheck
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig } from "@/lib/schemas";
@@ -38,7 +38,7 @@ export default function AiStudioPage() {
             </AlertDescription>
           </Alert>
            <Alert variant="default" className="mt-4">
-            <ShieldLock className="h-5 w-5" />
+            <ShieldCheck className="h-5 w-5" /> {/* Corrected Icon */}
             <AlertTitle>Confidentialité des Données</AlertTitle>
             <AlertDescription>
                 Toutes les interactions avec l'API PANDA AI sont traitées sur nos serveurs.

@@ -39,7 +39,7 @@ export default function MiniServersPage() {
         <AlertDescription>
           Votre grade actuel vous permet de déployer jusqu'à : {" "}
           {userQuotaConfig.maxMiniServers === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold"><InfinityIcon className="h-4 w-4" /> Nombre Illimité</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-primary"><InfinityIcon className="h-4 w-4 text-green-600" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong>
           )}

@@ -124,54 +124,64 @@ export type ApiTokenDisplay = z.infer<typeof ApiTokenDisplaySchema>;
 
 export const RolesConfig = {
   FREE: {
-    maxTunnels: 3,
+    label: "Free Panda",
+    maxTunnels: 2,
     maxCloudServers: 1,
+    maxCustomProxies: 1,
+    maxMiniServers: 1,
     maxApiAICallsPerDay: 100,
     canUseCustomDnsSubdomains: false,
     canUseOwnDomains: false,
     canUseWebmail: false,
     canUseVMs: false,
-    maxMiniServers: 1,
   },
   PREMIUM: {
+    label: "Premium Panda",
     maxTunnels: 10,
     maxCloudServers: 3,
+    maxCustomProxies: 3,
+    maxMiniServers: 3,
     maxApiAICallsPerDay: 1000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
     canUseVMs: false,
-    maxMiniServers: 3,
   },
   PREMIUM_PLUS: {
+    label: "Panda Premium+",
     maxTunnels: 25,
     maxCloudServers: Infinity,
+    maxCustomProxies: 5,
+    maxMiniServers: 5,
     maxApiAICallsPerDay: 5000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
     canUseVMs: false,
-    maxMiniServers: 5,
   },
   ENDIUM: {
+    label: "Panda Endium",
     maxTunnels: Infinity,
     maxCloudServers: Infinity,
+    maxCustomProxies: 10,
+    maxMiniServers: 10,
     maxApiAICallsPerDay: 20000,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
     canUseVMs: true,
-    maxMiniServers: 10,
   },
   ADMIN: {
+    label: "Admin Panda",
     maxTunnels: Infinity,
     maxCloudServers: Infinity,
+    maxCustomProxies: Infinity,
+    maxMiniServers: Infinity,
     maxApiAICallsPerDay: Infinity,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
     canUseVMs: true,
-    maxMiniServers: Infinity,
   }
 } as const;
 
@@ -195,4 +205,3 @@ export const NotificationDisplaySchema = NotificationSchema.extend({
   isRead: z.boolean(),
 });
 export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
-    

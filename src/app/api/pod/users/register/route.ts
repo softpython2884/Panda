@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, generateToken, type AuthenticatedUser } from '@/lib/auth';
 import { UserRegistrationSchema } from '@/lib/schemas';
 import { ZodError } from 'zod';
 import crypto from 'crypto';
@@ -29,19 +29,39 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hashPassword(password);
     const userId = crypto.randomUUID();
+    const defaultRole: AuthenticatedUser['role'] = 'FREE';
 
-    // For new users, firstName and lastName can be NULL by default
     db.prepare(
-      'INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)'
-    ).run(userId, username, email, hashedPassword);
+      'INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)'
+    ).run(userId, username, email, hashedPassword, defaultRole);
 
-    return NextResponse.json({ message: 'User registered successfully. You can now log in.', userId }, { status: 201 });
+    const userPayload: AuthenticatedUser & { username?: string, firstName?: string | null, lastName?: string | null } = {
+      id: userId,
+      email: email,
+      username: username,
+      firstName: null, // Defaulting to null
+      lastName: null,  // Defaulting to null
+      role: defaultRole,
+    };
+
+    const token = await generateToken({ 
+        id: userPayload.id, 
+        email: userPayload.email, 
+        role: userPayload.role 
+    });
+
+    return NextResponse.json({ 
+        message: 'User registered successfully.', 
+        userId, 
+        user: userPayload, 
+        token 
+    }, { status: 201 });
+
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
     }
-    console.error('Registration error:', error);
-    // Check for SQLite constraint errors specifically for username if needed
+    console.error('Pod Registration error:', error);
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed: users.username')) {
         return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
