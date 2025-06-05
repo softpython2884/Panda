@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
 import { 
   LayoutGrid, Waypoints, Cloud, Settings, ShieldCheck, KeyRound, 
-  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Share2 
+  TerminalSquare, Puzzle, DatabaseZap, ServerCog, Mail, Network, Globe, Sparkles, Link as LinkIcon // Renamed Link to LinkIcon
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from 'react';
 import { cn } from "@/lib/utils";
@@ -58,12 +58,12 @@ const sidebarNavGroups: NavGroup[] = [
     groupTitle: "Connectivité & Réseau",
     groupIcon: Network,
     items: [
-      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: Link, soon: true }, // Using Link icon from Lucide for custom proxy
+      { title: "Proxy Personnalisé", href: "/dashboard/custom-proxy", icon: LinkIcon, soon: true }, 
       { title: "Gestion DNS PANDA", href: "/dashboard/dns-management", icon: Globe, soon: true },
     ],
   },
   {
-    groupTitle: "Hébergement & Cloud",
+    groupTitle: "Hébergement & Services Cloud", // Changed from "Hébergement & Cloud" for consistency with other titles
     groupIcon: Cloud,
     items: [
       { title: "Mon Cloud", href: "/dashboard/cloud", icon: Cloud, soon: true },
@@ -72,8 +72,8 @@ const sidebarNavGroups: NavGroup[] = [
     ],
   },
   {
-    groupTitle: "Développement & IA",
-    groupIcon: Sparkles,
+    groupTitle: "Développement & Intégrations", // Changed from "Développement & IA" to be more encompassing
+    groupIcon: Sparkles, // Sparkles can still represent innovation/development
     items: [
       { title: "PANDA AI Studio", href: "/dashboard/ai-studio", icon: Sparkles, soon: true },
       { title: "Intégrations Services", href: "/dashboard/integrations", icon: Puzzle, soon: true },
@@ -135,7 +135,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
 
   return (
     <div className="flex flex-col h-full">
-      <Accordion type="multiple" defaultValue={defaultOpenAccordionItems} className="w-full px-4 py-2 space-y-1">
+      <Accordion type="multiple" defaultValue={defaultOpenAccordionItems} className="w-full px-4 py-2 space-y-1 flex-grow overflow-y-auto">
         {sidebarNavGroups.map((group, groupIndex) => (
           <AccordionItem value={group.groupTitle} key={`group-${group.groupTitle}-${groupIndex}`} className="border-b-0">
             <AccordionTrigger className="py-2 px-2 text-sm font-semibold hover:bg-muted/50 rounded-md hover:no-underline [&[data-state=open]>svg]:text-primary">
@@ -169,9 +169,7 @@ interface DashboardSidebarProps {
 export default function DashboardSidebar({ isMobileView, setIsOpen }: DashboardSidebarProps) {
   return (
     <div className="flex flex-col h-full bg-card"> 
-      <div className="p-6 border-b">
-        <h2 className="text-2xl font-headline text-primary">Menu PANDA</h2>
-      </div>
+      {/* Removed the redundant header from here as it's now in DashboardLayout for mobile */}
       <DashboardSidebarNav 
         isMobile={isMobileView} 
         onLinkClick={isMobileView && setIsOpen ? () => setIsOpen(false) : undefined}

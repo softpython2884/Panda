@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Menu } from "lucide-react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -53,7 +53,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}
       
       <Sheet open={isMobileSidebarOpen && !isDesktop} onOpenChange={setIsMobileSidebarOpen}>
-        <SheetContent side="left" className="w-[280px] sm:w-[320px] bg-card p-0 md:hidden z-50">
+        <SheetContent side="left" className="w-[280px] sm:w-[320px] bg-card p-0 md:hidden z-50 flex flex-col">
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle className="text-2xl font-headline text-primary">Menu PANDA</SheetTitle>
+          </SheetHeader>
           <DashboardSidebar 
               isMobileView={true} 
               setIsOpen={setIsMobileSidebarOpen} 
