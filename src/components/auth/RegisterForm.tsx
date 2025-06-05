@@ -15,21 +15,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UserRegistrationSchema, type UserRegistrationInput } from "@/lib/schemas";
-// import { useAuth } from "@/contexts/AuthContext"; // Not using login from context here
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"; // Changed MailCheck to CheckCircle
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function RegisterForm() {
-  // const { register, login } = useAuth(); // Not logging in immediately after register anymore
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [registrationMessage, setRegistrationMessage] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState<boolean>(false);
 
 
   const formSchema = UserRegistrationSchema.extend({
@@ -53,7 +51,7 @@ export default function RegisterForm() {
 
   async function onSubmit(values: RegisterFormInputExtended) {
     setIsLoading(true);
-    setRegistrationMessage(null);
+    setRegistrationSuccess(false);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -63,14 +61,15 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (res.ok) {
-        toast({ 
-            title: "Registration Submitted", 
-            description: "Please check your email to verify your account before logging in.",
-            duration: 10000, // Longer duration for this important message
+        toast({
+            title: "Registration Successful!",
+            description: "Your account has been created. You can now log in.",
+            duration: 7000,
         });
-        setRegistrationMessage(data.message || "Registration successful. Please check your email to verify your account.");
+        setRegistrationSuccess(true);
         form.reset(); // Clear form on success
-        // router.push("/auth/login?message=verification_sent"); // Optionally redirect or show message here
+        // Optionally redirect to login after a delay or let user click
+        // setTimeout(() => router.push("/auth/login"), 3000);
       } else {
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
       }
@@ -84,12 +83,12 @@ export default function RegisterForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {registrationMessage && (
+        {registrationSuccess && (
           <Alert variant="default" className="bg-green-50 border-green-300 text-green-700">
-            <MailCheck className="h-5 w-5 text-green-600" />
+            <CheckCircle className="h-5 w-5 text-green-600" />
             <AlertTitle className="font-semibold">Registration Successful!</AlertTitle>
             <AlertDescription>
-              {registrationMessage} You can now close this page or proceed to login once verified.
+              Your account has been created. You can now proceed to login.
             </AlertDescription>
           </Alert>
         )}
@@ -175,9 +174,9 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading || !!registrationMessage}>
+        <Button type="submit" className="w-full" disabled={isLoading || registrationSuccess}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {registrationMessage ? "Verification Email Sent" : "Register"}
+          {registrationSuccess ? "Account Created!" : "Register"}
         </Button>
       </form>
     </Form>

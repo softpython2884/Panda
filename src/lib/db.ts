@@ -55,7 +55,7 @@ function initializeSchema() {
   if (schemaVersion < 2) {
     try {
       db.exec('ALTER TABLE services ADD COLUMN local_port INTEGER;');
-      db.exec('ALTER TABLE services ADD COLUMN frp_type TEXT;'); 
+      db.exec('ALTER TABLE services ADD COLUMN frp_type TEXT;');
       console.log("Added local_port and frp_type columns to services table (migration step for v2).");
     } catch (e) {
         if (e instanceof Error && (e.message.includes('duplicate column name: local_port') || e.message.includes('duplicate column name: frp_type'))) {
@@ -71,13 +71,13 @@ function initializeSchema() {
 
   if (schemaVersion < 3) {
     try {
-      db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;'); 
+      db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;');
       db.exec('ALTER TABLE services ADD COLUMN use_encryption BOOLEAN DEFAULT TRUE;');
       db.exec('ALTER TABLE services ADD COLUMN use_compression BOOLEAN DEFAULT FALSE;');
       console.log("Added remote_port, use_encryption, use_compression columns to services table (migration step for v3).");
     } catch (e) {
         if (e instanceof Error && (
-            e.message.includes('duplicate column name: remote_port') || 
+            e.message.includes('duplicate column name: remote_port') ||
             e.message.includes('duplicate column name: use_encryption') ||
             e.message.includes('duplicate column name: use_compression')
             )) {
@@ -101,10 +101,10 @@ function initializeSchema() {
       const stmt = db.prepare('UPDATE users SET username = email WHERE username IS NULL');
       stmt.run();
       console.log("Attempted to populate username for existing users using their email as a fallback.");
-      
+
       db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);');
       console.log("Created UNIQUE index on username column.");
-      
+
     } catch (e) {
         if (e instanceof Error) {
             if (e.message.includes('duplicate column name')) {
@@ -118,7 +118,7 @@ function initializeSchema() {
             console.error("Unknown error during v4 schema migration:", e);
         }
         if (e instanceof Error && !(e.message.includes('duplicate column name'))) {
-            throw e; 
+            throw e;
         }
     }
     db.pragma('user_version = 4');
@@ -204,22 +204,8 @@ function initializeSchema() {
     schemaVersion = 7;
   }
 
-  if (schemaVersion < 8) {
-    try {
-      db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;");
-      db.exec("ALTER TABLE users ADD COLUMN email_verification_token TEXT;");
-      console.log("Added email_verified and email_verification_token columns to users table (migration step for v8).");
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('duplicate column name')) {
-        console.warn("Columns for email verification already exist on users table (v8 migration).");
-      } else {
-        throw e;
-      }
-    }
-    db.pragma('user_version = 8');
-    console.log("Database schema upgraded to version 8 for email verification.");
-    schemaVersion = 8;
-  }
+  // Schema version 8 (email verification) has been removed.
+  // The last effective schema version is 7.
 }
 
 initializeSchema();
@@ -230,4 +216,3 @@ process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
 
 export default db;
-    
