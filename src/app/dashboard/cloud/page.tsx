@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIcon, PlusCircle, Loader2, AlertTriangle, PackageSearch, CheckCircle } from "lucide-react";
+import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIconJs, PlusCircle, Loader2, AlertTriangle, PackageSearch, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig, UserRoleDisplayConfig, CloudSpaceCreateSchema, type CloudSpaceCreateInput, type CloudSpace } from "@/lib/schemas";
@@ -229,20 +229,20 @@ export default function CloudDashboardPage() {
           <div className="flex justify-center items-center gap-4">
             <CloudCog className="h-12 w-12 text-accent" />
             <MessageSquare className="h-12 w-12 text-blue-500" />
-            <LinkIcon className="h-12 w-12 text-green-500" />
+            <LinkIconJs className="h-12 w-12 text-green-500" />
           </div>
           <Alert>
             <AlertTitle className="font-semibold">Flux d'Intégration :</AlertTitle>
             <AlertDescription>
                 <ol className="list-decimal pl-5 space-y-2 mt-2">
                     <li><strong>Initiation par l'Utilisateur PANDA :</strong> Vous créez un "Espace Cloud" via cette interface PANDA en fournissant un nom.</li>
-                    <li><strong>PANDA Notifie le Webhook Général :</strong> L'application PANDA envoie un message formaté (contenant nom de l'espace, votre nom d'utilisateur PANDA, ID utilisateur PANDA, et un ID unique pour l'espace cloud) au webhook général Discord configuré (<code>https://discord.com/api/webhooks/1380580290212397147/...</code>).</li>
+                    <li><strong>PANDA Notifie le Webhook Général :</strong> L'application PANDA envoie un message formaté (contenant le nom de l'espace, votre nom d'utilisateur PANDA, l'ID utilisateur PANDA, et un ID unique pour l'espace cloud) au webhook général Discord configuré (ex: <code className="bg-muted px-1 rounded text-xs">https://discord.com/api/webhooks/1380580290212397147/...</code>).</li>
                     <li><strong>Action du Bot Discord PANDA :</strong> Votre bot Discord (hébergé séparément, par exemple dans un dossier <code className="bg-muted px-1 rounded text-xs">discordbot</code> sur vos serveurs, utilisant son token <code className="bg-muted px-1 rounded text-xs">MTM4M...</code> et l'ID du serveur Discord <code className="bg-muted px-1 rounded text-xs">1380...</code>) écoute les messages sur ce webhook général.
                         <ul className="list-disc pl-5 space-y-1 mt-1">
                            <li>Quand il détecte le message de PANDA, il crée un nouveau salon textuel privé sur votre serveur Discord (ex: <code className="bg-muted px-1 rounded text-xs">#cloud-votreNomPanda-idCourt</code>).</li>
                            <li>Il génère un webhook Discord unique pour ce nouveau salon privé.</li>
-                           <li>**Crucial :** Le bot appelle ensuite une API PANDA sécurisée (`PUT /api/pod/cloud/{idDeLEspaceCloud}/discord-integration`) pour transmettre à PANDA l'URL de ce webhook privé et l'ID du salon privé.</li>
-                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud "{'{nom_espace}'}" est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) et/ou poster un message de bienvenue dans le salon privé.</li>
+                           <li>**Crucial :** Le bot appelle ensuite une API PANDA sécurisée (`PUT /api/pod/cloud/[ID_ESPACE_CLOUD_PANDA]/discord-integration`) pour transmettre à PANDA l'URL de ce webhook privé et l'ID du salon privé.</li>
+                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud "{'{nom_espace}'}" est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) ou poster un message de bienvenue dans le salon privé.</li>
                         </ul>
                     </li>
                     <li><strong>PANDA Stocke les Informations :</strong> PANDA enregistre l'URL du webhook privé et l'ID du salon privé dans sa base de données, associés à votre espace cloud.</li>
