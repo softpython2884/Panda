@@ -37,21 +37,25 @@ export default function CustomProxyPage() {
        <Alert className="w-full max-w-md mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Proxys Personnalisés</AlertTitle>
-        <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :&nbsp;
-          {userQuotaConfig.maxCustomProxies === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
-          ) : (
-            <strong className="text-primary">{userQuotaConfig.maxCustomProxies}</strong>
-          )}
-          &nbsp;proxy(s) personnalisé(s).
+        <AlertDescription>
+          <span className="flex items-center gap-1">
+            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :&nbsp;
+            {userQuotaConfig.maxCustomProxies === Infinity ? (
+              <InfinityIcon className="h-4 w-4 text-green-600" />
+            ) : (
+              <strong className="text-primary">{userQuotaConfig.maxCustomProxies}</strong>
+            )}
+            &nbsp;proxy(s) personnalisé(s).
+          </span>
         </AlertDescription>
       </Alert>
 
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Path And Network Domain Apportioner</p>
+       <p className="text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>ath <span className="text-primary">A</span>nd <span className="text-primary">N</span>etwork <span className="text-primary">D</span>omain <span className="text-primary">A</span>pportioner
+      </p>
     </div>
   );
 }

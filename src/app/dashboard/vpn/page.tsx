@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Wifi, ShieldCheck, Briefcase, Zap, Construction, UserCheck, Infinity as InfinityIcon, ShieldAlert } from "lucide-react";
@@ -66,15 +66,17 @@ export default function VpnPage() {
       <Alert className="w-full max-w-lg mt-4">
         <Wifi className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Connexions VPN</AlertTitle>
-        <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
-          {userQuotaConfig.maxVpnConnections === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
-          ) : (
-            <strong className="text-primary">{userQuotaConfig.maxVpnConnections} connexion(s) active(s)</strong>
-          )}
-          .
-          {!canAccessVpn && userQuotaConfig.maxVpnConnections !== Infinity && <span className="ml-1 text-sm text-destructive"> (Mise à niveau requise pour accéder au VPN)</span>}
+        <AlertDescription>
+          <span className="flex items-center gap-1">
+            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+            {userQuotaConfig.maxVpnConnections === Infinity ? (
+              <InfinityIcon className="h-4 w-4 text-green-600" />
+            ) : (
+              <strong className="text-primary">{userQuotaConfig.maxVpnConnections} connexion(s) active(s)</strong>
+            )}
+            .
+            {!canAccessVpn && userQuotaConfig.maxVpnConnections !== Infinity && <span className="ml-1 text-sm text-destructive"> (Mise à niveau requise pour accéder au VPN)</span>}
+          </span>
         </AlertDescription>
       </Alert>
 
@@ -92,11 +94,11 @@ export default function VpnPage() {
                 {offer.features.map(feature => <li key={feature}>{feature}</li>)}
               </ul>
             </CardContent>
-            <CardContent>
+            <CardFooter>
                  <Button disabled className="w-full mt-auto">
                     Bientôt Disponible
                 </Button>
-            </CardContent>
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -104,7 +106,9 @@ export default function VpnPage() {
       <Button asChild variant="outline" className="mt-12">
         <Link href="/dashboard">Retour au Tableau de Bord</Link>
       </Button>
-      <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Private Virtual Network & Data Anonymization</p>
+      <p className="text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>rivate <span className="text-primary">A</span>nd <span className="text-primary">N</span>etworked <span className="text-primary">D</span>ata <span className="text-primary">A</span>nonymization
+      </p>
     </div>
   );
 }

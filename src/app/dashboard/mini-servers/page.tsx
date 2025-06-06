@@ -37,21 +37,25 @@ export default function MiniServersPage() {
       <Alert className="w-full max-w-md mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Mini-Serveurs</AlertTitle>
-        <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de déployer jusqu'à :&nbsp;
-          {userQuotaConfig.maxMiniServers === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
-          ) : (
-            <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong>
-          )}
-          &nbsp;mini-serveur(s).
+        <AlertDescription>
+          <span className="flex items-center gap-1">
+            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de déployer jusqu'à :&nbsp;
+            {userQuotaConfig.maxMiniServers === Infinity ? (
+              <InfinityIcon className="h-4 w-4 text-green-600" />
+            ) : (
+              <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong>
+            )}
+            &nbsp;mini-serveur(s).
+          </span>
         </AlertDescription>
       </Alert>
 
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Programmable Anywhere Node Distribution Appliance</p>
+       <p className="text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>rogrammable <span className="text-primary">A</span>nywhere <span className="text-primary">N</span>ode <span className="text-primary">D</span>istribution <span className="text-primary">A</span>ppliance
+      </p>
     </div>
   );
 }

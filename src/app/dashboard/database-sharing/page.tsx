@@ -38,7 +38,9 @@ export default function DatabaseSharingPage() {
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Portable And Networked Database Archives</p>
+       <p className="text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>ortable <span className="text-primary">A</span>nd <span className="text-primary">N</span>etworked <span className="text-primary">D</span>atabase <span className="text-primary">A</span>rchives
+      </p>
     </div>
   );
 }

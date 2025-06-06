@@ -83,6 +83,23 @@ export const FrpServiceSchema = z.object({
 
 export const ServiceSchema = FrpServiceSchema;
 
+export const CloudSpaceCreateSchema = z.object({
+  name: z.string().min(3, "Cloud space name must be at least 3 characters long.").max(50, "Cloud space name must be 50 characters or less.")
+    .regex(/^[a-zA-Z0-9-_ ]+$/, "Name can only contain letters, numbers, hyphens, underscores, and spaces."),
+  // discordWebhookUrl: z.string().url("Invalid Discord Webhook URL format.").optional().nullable(), // For later when user can provide it
+});
+export type CloudSpaceCreateInput = z.infer<typeof CloudSpaceCreateSchema>;
+
+export const CloudSpaceSchema = CloudSpaceCreateSchema.extend({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  discordWebhookUrl: z.string().url().nullable(),
+  discordChannelId: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type CloudSpace = z.infer<typeof CloudSpaceSchema>;
+
+
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
 export type UserLoginInput = z.infer<typeof UserLoginSchema>;
 export type UserProfileUpdateInput = z.infer<typeof UserProfileUpdateSchema>;
@@ -126,13 +143,13 @@ export const RolesConfig = {
   FREE: {
     label: "Free Panda",
     maxTunnels: 2,
-    maxCloudServers: 1, // Each server has unlimited storage
+    maxCloudServers: 1, 
     maxCustomProxies: 1,
     maxMiniServers: 1,
     maxApiAICallsPerDay: 100,
-    maxVpnConnections: 0, // 0 for no access, 1 for basic, etc.
-    canUseCustomDnsSubdomains: false, // For *.pandadns.nationquest.fr
-    canUseOwnDomains: false, // For custom domains like .fr, .com
+    maxVpnConnections: 0, 
+    canUseCustomDnsSubdomains: false, 
+    canUseOwnDomains: false, 
     canUseWebmail: false,
     canUseVMs: false,
   },
@@ -143,7 +160,7 @@ export const RolesConfig = {
     maxCustomProxies: 3,
     maxMiniServers: 3,
     maxApiAICallsPerDay: 1000,
-    maxVpnConnections: 1, // Basic VPN access
+    maxVpnConnections: 1,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -156,7 +173,7 @@ export const RolesConfig = {
     maxCustomProxies: 5,
     maxMiniServers: 5,
     maxApiAICallsPerDay: 5000,
-    maxVpnConnections: 1, // Super Secure VPN access
+    maxVpnConnections: 1, 
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -169,7 +186,7 @@ export const RolesConfig = {
     maxCustomProxies: 10,
     maxMiniServers: 10,
     maxApiAICallsPerDay: 20000,
-    maxVpnConnections: 1, // Enterprise VPN access
+    maxVpnConnections: 1, 
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
@@ -210,4 +227,3 @@ export const NotificationDisplaySchema = NotificationSchema.extend({
   isRead: z.boolean(),
 });
 export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
-

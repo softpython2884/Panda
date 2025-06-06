@@ -1,80 +1,276 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIcon } from "lucide-react"; // Added MessageSquare, LinkIcon
+import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIcon, PlusCircle, Loader2, AlertTriangle, PackageSearch } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig, CloudSpaceCreateSchema, type CloudSpaceCreateInput, type CloudSpace } from "@/lib/schemas";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 
 export default function CloudDashboardPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [cloudSpaces, setCloudSpaces] = useState<CloudSpace[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const userRole = user?.role || 'FREE';
-  const userQuotaConfig = RolesConfig[userRole];
+  const userQuotaConfig = user ? RolesConfig[userRole] : RolesConfig.FREE;
+  const canCreateMore = user ? userQuotaConfig.maxCloudServers === Infinity || cloudSpaces.length < userQuotaConfig.maxCloudServers : false;
+
+  const form = useForm<CloudSpaceCreateInput>({
+    resolver: zodResolver(CloudSpaceCreateSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  async function fetchCloudSpaces() {
+    if (!user) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/dashboard/cloud');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch cloud spaces');
+      }
+      const data = await response.json();
+      setCloudSpaces(data.cloudSpaces || []);
+    } catch (err: any) {
+      setError(err.message);
+      toast({ title: "Erreur de chargement", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchCloudSpaces();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+
+  async function onSubmitCreateSpace(values: CloudSpaceCreateInput) {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/dashboard/cloud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast({ title: "Espace Cloud Créé", description: `L'espace cloud "${values.name}" a été créé.` });
+        form.reset();
+        fetchCloudSpaces(); // Refresh list
+      } else {
+        throw new Error(data.error || "Failed to create cloud space");
+      }
+    } catch (error: any) {
+      toast({ title: "Erreur de Création", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // Placeholder for future delete functionality
+  // const handleDeleteSpace = async (spaceId: string) => {
+  //   toast({ title: "Fonctionnalité à venir", description: "La suppression d'espaces cloud sera bientôt disponible." });
+  // };
 
   return (
-    <div className="space-y-8 flex flex-col items-center justify-center text-center min-h-[calc(100vh-300px)]">
-       <Construction className="h-24 w-24 text-primary mb-6" />
-      <h1 className="text-4xl font-headline font-bold text-primary">Espace Cloud PANDA</h1>
-      <p className="text-xl text-muted-foreground max-w-2xl">
-        Cette section est en cours de développement. Hébergez vos propres serveurs cloud personnels et partagez des fichiers, avec une intégration poussée.
-      </p>
-      <Card className="w-full max-w-lg mt-8 shadow-lg">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-headline font-bold text-primary">Espace Cloud PANDA</h1>
+          <p className="text-muted-foreground">Gérez vos serveurs cloud personnels et vos fichiers, avec un stockage illimité par serveur.</p>
+        </div>
+      </div>
+      
+      <Alert variant="default" className="shadow-sm">
+        <Server className="h-5 w-5" />
+        <AlertTitle className="font-semibold">Vos Quotas d'Espaces Cloud</AlertTitle>
+        <AlertDescription>
+          <span className="flex items-center gap-1">
+            Vous utilisez actuellement <strong className="text-primary">{cloudSpaces.length}</strong> espace(s) cloud sur les&nbsp;
+            {userQuotaConfig.maxCloudServers === Infinity ? (
+              <InfinityIcon className="h-4 w-4 text-green-600" />
+            ) : (
+              <strong className="text-primary">{userQuotaConfig.maxCloudServers}</strong>
+            )}
+            &nbsp;autorisés pour votre grade {UserRoleDisplayConfig[userRole].label}.
+            Chaque espace cloud dispose d'un stockage illimité.
+            {!canCreateMore && userQuotaConfig.maxCloudServers !== Infinity && (
+              <span className="text-destructive font-medium ml-1"> Vous avez atteint votre limite.</span>
+            )}
+          </span>
+        </AlertDescription>
+      </Alert>
+
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline">Bientôt Disponible: Espace Cloud Intégré</CardTitle>
-          <CardDescription>Gérez vos serveurs cloud personnels et vos fichiers, avec un stockage illimité par serveur.</CardDescription>
+          <CardTitle>Créer un Nouvel Espace Cloud</CardTitle>
+          <CardDescription>Donnez un nom à votre nouvel espace cloud personnel.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitCreateSpace)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom de l'Espace Cloud</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Mes Projets Perso" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={!canCreateMore || isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                Créer l'Espace Cloud
+              </Button>
+              {!canCreateMore && (
+                <p className="text-sm text-destructive mt-2">Vous avez atteint votre quota d'espaces cloud.</p>
+              )}
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Mes Espaces Cloud</CardTitle>
+          <CardDescription>Liste de vos espaces cloud existants.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading && (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="ml-3 text-muted-foreground">Chargement de vos espaces cloud...</p>
+            </div>
+          )}
+          {!isLoading && error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertTitle>Erreur de chargement</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {!isLoading && !error && cloudSpaces.length === 0 && (
+             <div className="text-center py-10 flex flex-col items-center">
+                <PackageSearch className="h-24 w-24 text-muted-foreground mb-6" />
+                <p className="text-xl text-muted-foreground">Vous n'avez pas encore d'espace cloud.</p>
+            </div>
+          )}
+          {!isLoading && !error && cloudSpaces.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {cloudSpaces.map((space) => (
+                <Card key={space.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Server className="h-5 w-5 text-primary"/>{space.name}</CardTitle>
+                    <CardDescription>Créé le: {new Date(space.createdAt).toLocaleDateString()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {space.discordWebhookUrl ? (
+                      <p className="text-xs text-muted-foreground break-all">Webhook: <code className="bg-muted px-1 rounded">{space.discordWebhookUrl}</code></p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Webhook Discord non configuré.</p>
+                    )}
+                     {/* Placeholder pour l'URL d'accès direct */}
+                     <p className="text-xs text-muted-foreground mt-1">URL d'accès: <code className="bg-muted px-1 rounded">https://cloud.panda.nationquest.fr/?id={space.id}</code> (Concept)</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" size="sm" disabled>Gérer (Bientôt)</Button>
+                    {/* <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="ml-2" disabled>Supprimer (Bientôt)</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer "{space.name}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action est irréversible.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteSpace(space.id)}>Supprimer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog> */}
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="w-full mt-8 shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline">Concept d'Intégration Cloud & Discord</CardTitle>
+          <CardDescription>Fonctionnement prévu pour l'interaction avec Discord.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-left">
           <div className="flex justify-center items-center gap-4">
             <CloudCog className="h-12 w-12 text-accent" />
-            <MessageSquare className="h-12 w-12 text-blue-500" /> {/* Discord-like icon */}
-            <LinkIcon className="h-12 w-12 text-green-500" /> {/* Webhook-like icon */}
+            <MessageSquare className="h-12 w-12 text-blue-500" />
+            <LinkIcon className="h-12 w-12 text-green-500" />
           </div>
           <Alert>
             <AlertTitle className="font-semibold">Fonctionnalités Prévues (Concept) :</AlertTitle>
             <AlertDescription>
                 <ul className="list-disc pl-5 space-y-1 mt-2">
-                    <li><strong>Intégration Bot Discord :</strong> À la création d'un "espace cloud", un bot Discord (connecté à un serveur PANDA dédié) pourrait créer un salon privé pour l'utilisateur.</li>
-                    <li><strong>Webhook Personnalisé :</strong> Dans ce salon Discord, un webhook unique serait généré au nom de l'utilisateur.</li>
-                    <li><strong>URL d'Accès :</strong> Votre espace cloud serait accessible via une URL publique unique, par exemple : <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/?webhook=VOTRE_URL_WEBHOOK_DISCORD</code>. Cette URL pourrait être utilisée par des applications pour envoyer des notifications ou des données à votre espace cloud via le webhook Discord.</li>
-                    <li><strong>Partage Sécurisé :</strong> Le partage d'un cloud avec un autre utilisateur pourrait générer un second webhook (avec des permissions distinctes) dans le même salon Discord, permettant de tracer les accès et de contrôler les permissions.</li>
-                    <li><strong>Traçabilité :</strong> Le créateur de l'espace cloud pourrait visualiser les accès récents ou les événements (comme des fichiers uploadés via une intégration) via les messages du webhook dans son salon Discord.</li>
+                    <li><strong>Intégration Bot Discord :</strong> À la création d'un "espace cloud", un bot Discord PANDA (connecté à un serveur Discord PANDA dédié) pourrait créer un salon privé pour l'utilisateur.</li>
+                    <li><strong>Webhook Personnalisé :</strong> Dans ce salon Discord, un webhook unique serait généré, permettant à l'utilisateur ou à des applications tierces d'envoyer des informations à cet espace.</li>
+                    <li><strong>URL d'Accès :</strong> L'espace cloud serait accessible ou pourrait être adressé via une URL publique unique, par exemple : <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/?webhook=VOTRE_URL_WEBHOOK_DISCORD</code> ou <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/ws/{'{espace_id}'}</code>. Cette URL pourrait être utilisée par des applications pour envoyer des notifications ou des données à votre espace cloud via le webhook Discord.</li>
+                    <li><strong>Partage Sécurisé :</strong> Le partage d'un cloud avec un autre utilisateur pourrait générer un second webhook (avec des permissions distinctes) dans le même salon Discord, ou inviter l'utilisateur au salon, permettant de tracer les accès et de contrôler les permissions.</li>
+                    <li><strong>Traçabilité :</strong> Le créateur de l'espace cloud pourrait visualiser les activités (comme des fichiers uploadés via une intégration ou des messages système) via les messages du webhook dans son salon Discord.</li>
                 </ul>
-                <p className="mt-2 text-xs text-muted-foreground">Les identifiants du bot Discord (Token, ID Serveur) seraient idéalement stockés dans un fichier <code className="bg-muted px-1 rounded">.env.cloud</code> côté serveur PANDA pour la gestion.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Les identifiants du bot Discord (Token, ID Serveur) seraient stockés de manière sécurisée côté serveur PANDA, potentiellement dans un fichier <code className="bg-muted px-1 rounded">.env.cloud</code>.</p>
             </AlertDescription>
           </Alert>
         </CardContent>
       </Card>
 
-      <Alert className="w-full max-w-lg mt-4">
-        <Server className="h-5 w-5" />
-        <AlertTitle>Vos Quotas de Serveurs Cloud</AlertTitle>
-        <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de créer jusqu'à :&nbsp;
-          {userQuotaConfig.maxCloudServers === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
-          ) : (
-            <strong className="text-primary">{userQuotaConfig.maxCloudServers} serveur(s) cloud</strong>
-          )}
-          . Chaque serveur cloud dispose d'un espace de stockage illimité.
-        </AlertDescription>
-      </Alert>
-
-      <Alert className="w-full max-w-lg mt-4">
-        <Share2 className="h-5 w-5" />
-        <AlertTitle>Partage de Serveurs Cloud (Prochainement)</AlertTitle>
-        <AlertDescription>
-          Vous pourrez bientôt partager l'accès à vos serveurs cloud ou fichiers spécifiques avec d'autres utilisateurs PANDA ou via des liens publics sécurisés.
-          La gestion des permissions et des liens de partage sera disponible ici.
-        </AlertDescription>
-      </Alert>
-
-       <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour au Tableau de Bord</Link>
-       </Button>
-        <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personal Archive & Networked Data Access</p>
+      <p className="text-center text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>ersonal <span className="text-primary">A</span>rchive & <span className="text-primary">N</span>etworked <span className="text-primary">D</span>ata <span className="text-primary">A</span>ccess
+      </p>
     </div>
   );
 }

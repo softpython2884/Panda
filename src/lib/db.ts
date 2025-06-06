@@ -204,8 +204,28 @@ function initializeSchema() {
     schemaVersion = 7;
   }
 
-  // Schema version 8 (email verification) has been removed.
-  // The last effective schema version is 7.
+  if (schemaVersion < 8) {
+    try {
+      db.exec(
+        'CREATE TABLE IF NOT EXISTS cloud_spaces (\n' +
+        '  id TEXT PRIMARY KEY,\n' +
+        '  user_id TEXT NOT NULL,\n' +
+        '  name TEXT NOT NULL,\n' +
+        '  discord_webhook_url TEXT,\n' + // Will store the full webhook URL
+        '  discord_channel_id TEXT,\n' +  // Optional: if you want to store channel ID for bot management
+        '  created_at TEXT DEFAULT CURRENT_TIMESTAMP,\n' +
+        '  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n' +
+        ');'
+      );
+      console.log("Created cloud_spaces table (migration step for v8).");
+    } catch (e) {
+      console.error("Error creating cloud_spaces table:", e);
+      throw e;
+    }
+    db.pragma('user_version = 8');
+    console.log("Database schema upgraded to version 8 for Cloud Spaces.");
+    schemaVersion = 8;
+  }
 }
 
 initializeSchema();

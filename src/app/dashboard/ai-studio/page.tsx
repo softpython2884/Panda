@@ -53,14 +53,16 @@ export default function AiStudioPage() {
       <Alert className="w-full max-w-lg mt-4">
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
-        <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
-          {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4 mr-1" /> Appels / jour</span>
-          ) : (
-            <><strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong> appels API AI / jour</>
-          )}
-          . (Quota non encore actif)
+        <AlertDescription>
+           <span className="flex items-center gap-1">
+            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+            {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
+                <InfinityIcon className="h-4 w-4 text-green-600" />
+            ) : (
+                <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong>
+            )}
+            &nbsp;appels API AI / jour. (Quota non encore actif)
+          </span>
         </AlertDescription>
       </Alert>
 
@@ -68,7 +70,9 @@ export default function AiStudioPage() {
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personalized AI & Networked Development Arena</p>
+       <p className="text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>ersonalized <span className="text-primary">A</span>I & <span className="text-primary">N</span>etworked <span className="text-primary">D</span>evelopment <span className="text-primary">A</span>rena
+      </p>
     </div>
   );
 }
