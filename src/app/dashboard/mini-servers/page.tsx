@@ -38,15 +38,17 @@ export default function MiniServersPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Mini-Serveurs</AlertTitle>
         <AlertDescription>
-          <span className="flex items-center gap-1">
-            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de déployer jusqu'à :&nbsp;
+          Votre grade ({UserRoleDisplayConfig[userRole].label}) vous permet de déployer jusqu'à :&nbsp;
             {userQuotaConfig.maxMiniServers === Infinity ? (
-              <InfinityIcon className="h-4 w-4 text-green-600" />
+                 <span className="inline-flex items-center gap-1">
+                    <InfinityIcon className="h-4 w-4 text-green-600" /> 
+                    <span>mini-serveurs illimités.</span>
+                </span>
             ) : (
-              <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong>
+                <span>
+                    <strong className="text-primary">{userQuotaConfig.maxMiniServers}</strong> mini-serveur(s).
+                </span>
             )}
-            &nbsp;mini-serveur(s).
-          </span>
         </AlertDescription>
       </Alert>
 
@@ -59,4 +61,6 @@ export default function MiniServersPage() {
     </div>
   );
 }
+    
+
     

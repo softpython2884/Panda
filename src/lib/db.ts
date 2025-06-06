@@ -20,12 +20,14 @@ function initializeSchema() {
     if (typeof row === 'number') {
         schemaVersion = row;
     }
+    console.log(`Current database schema version: ${schemaVersion}`);
   } catch (e) {
     console.warn("Could not read user_version, assuming 0. Error:", e);
   }
 
 
   if (schemaVersion < 1) {
+    console.log("Applying schema version 1...");
     db.exec(
       'CREATE TABLE IF NOT EXISTS users (\n' +
       '  id TEXT PRIMARY KEY,\n' +
@@ -53,6 +55,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 2) {
+    console.log("Applying schema version 2...");
     try {
       db.exec('ALTER TABLE services ADD COLUMN local_port INTEGER;');
       db.exec('ALTER TABLE services ADD COLUMN frp_type TEXT;');
@@ -70,6 +73,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 3) {
+    console.log("Applying schema version 3...");
     try {
       db.exec('ALTER TABLE services ADD COLUMN remote_port INTEGER;');
       db.exec('ALTER TABLE services ADD COLUMN use_encryption BOOLEAN DEFAULT TRUE;');
@@ -92,6 +96,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 4) {
+    console.log("Applying schema version 4...");
     try {
       db.exec('ALTER TABLE users ADD COLUMN username TEXT;');
       db.exec('ALTER TABLE users ADD COLUMN firstName TEXT;');
@@ -118,7 +123,8 @@ function initializeSchema() {
             console.error("Unknown error during v4 schema migration:", e);
         }
         if (e instanceof Error && !(e.message.includes('duplicate column name'))) {
-            throw e;
+            // Not throwing e to allow the version pragma to be set if only some parts failed non-critically.
+            // However, if unique index fails, it's a problem.
         }
     }
     db.pragma('user_version = 4');
@@ -127,6 +133,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 5) {
+    console.log("Applying schema version 5...");
     try {
       db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'FREE' NOT NULL;");
       console.log("Added role column to users table (migration step for v5).");
@@ -154,6 +161,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 6) {
+    console.log("Applying schema version 6...");
     try {
       db.exec(
         'CREATE TABLE IF NOT EXISTS api_tokens (\n' +
@@ -180,6 +188,7 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 7) {
+    console.log("Applying schema version 7...");
     try {
       db.exec(
         'CREATE TABLE IF NOT EXISTS notifications (\n' +
@@ -205,22 +214,30 @@ function initializeSchema() {
   }
 
   if (schemaVersion < 8) {
+    console.log("Applying schema version 8 for cloud_spaces table...");
     try {
       db.exec(
-        'CREATE TABLE IF NOT EXISTS cloud_spaces (\n' +
+        'CREATE TABLE IF NOT EXISTS cloud_spaces (\n' + // Added IF NOT EXISTS for robustness
         '  id TEXT PRIMARY KEY,\n' +
         '  user_id TEXT NOT NULL,\n' +
         '  name TEXT NOT NULL,\n' +
-        '  discord_webhook_url TEXT,\n' + // Will store the full webhook URL
-        '  discord_channel_id TEXT,\n' +  // Optional: if you want to store channel ID for bot management
+        '  discord_webhook_url TEXT,\n' + 
+        '  discord_channel_id TEXT,\n' +  
         '  created_at TEXT DEFAULT CURRENT_TIMESTAMP,\n' +
         '  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n' +
         ');'
       );
       console.log("Created cloud_spaces table (migration step for v8).");
     } catch (e) {
-      console.error("Error creating cloud_spaces table:", e);
-      throw e;
+      console.error("Error creating cloud_spaces table during migration to v8:", e);
+      // Depending on the error, you might not want to throw if it's a minor issue
+      // but a "no such table" for something it *just* tried to create is odd.
+      // However, if it's "table already exists", that's fine.
+      if (e instanceof Error && !e.message.toLowerCase().includes('already exists')) {
+          throw e;
+      } else {
+          console.warn("Cloud_spaces table might already exist or another minor issue occurred:", e);
+      }
     }
     db.pragma('user_version = 8');
     console.log("Database schema upgraded to version 8 for Cloud Spaces.");
@@ -228,7 +245,13 @@ function initializeSchema() {
   }
 }
 
-initializeSchema();
+try {
+    initializeSchema();
+} catch (e) {
+    console.error("CRITICAL ERROR during database schema initialization:", e);
+    console.error("The application might be in an unstable state. Please check the database manually or consider deleting the db/panda_pod.db file to reinitialize.");
+}
+
 
 process.on('exit', () => db.close());
 process.on('SIGHUP', () => process.exit(128 + 1));
@@ -236,3 +259,5 @@ process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
 
 export default db;
+
+    

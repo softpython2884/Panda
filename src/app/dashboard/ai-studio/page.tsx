@@ -54,15 +54,18 @@ export default function AiStudioPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
         <AlertDescription>
-           <span className="flex items-center gap-1">
-            Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+           Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
             {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
-                <InfinityIcon className="h-4 w-4 text-green-600" />
+                <span className="inline-flex items-center gap-1">
+                    <InfinityIcon className="h-4 w-4 text-green-600" /> 
+                    <span>appels API AI illimités / jour.</span>
+                </span>
             ) : (
-                <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong>
+                <span>
+                    <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong> appels API AI / jour.
+                </span>
             )}
-            &nbsp;appels API AI / jour. (Quota non encore actif)
-          </span>
+            (Quota non encore actif)
         </AlertDescription>
       </Alert>
 
@@ -71,9 +74,11 @@ export default function AiStudioPage() {
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
        <p className="text-xs text-muted-foreground mt-10 italic">
-        <span className="text-primary">P</span>ersonalized <span className="text-primary">A</span>I & <span className="text-primary">N</span>etworked <span className="text-primary">D</span>evelopment <span className="text-primary">A</span>rena
+        <span className="text-primary">P</span>ersonalized <span className="text-primary">A</span>rtificial <span className="text-primary">N</span>etworked <span className="text-primary">D</span>evelopment <span className="text-primary">A</span>rena
       </p>
     </div>
   );
 }
+    
+
     
