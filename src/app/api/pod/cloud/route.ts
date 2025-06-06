@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
     }
     const token = authHeader.substring(7);
-    const decodedUser = await verifyToken<AuthenticatedUser & { username?: string }>(token); // Add username to type if present
+    const decodedUser = await verifyToken<AuthenticatedUser & { username?: string }>(token); 
 
     if (!decodedUser || !decodedUser.id || !decodedUser.role) {
       return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });
@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
     userId = decodedUser.id;
     userRole = decodedUser.role;
     
-    // Attempt to get username for Discord notification
     const fullUserFromDb = db.prepare('SELECT username, email FROM users WHERE id = ?').get(userId) as { username: string | null, email: string } | undefined;
     userPandaUsername = fullUserFromDb?.username || fullUserFromDb?.email;
 
@@ -73,42 +72,42 @@ export async function POST(request: NextRequest) {
     
     const { name } = validationResult.data;
     
-    const discordWebhookUrl = null; 
-    const discordChannelId = null;
+    // discord_webhook_url and discord_channel_id will be updated later by the bot
+    const initialDiscordWebhookUrl = null; 
+    const initialDiscordChannelId = null;
 
     const spaceId = crypto.randomUUID();
 
     db.prepare(
       `INSERT INTO cloud_spaces (id, user_id, name, discord_webhook_url, discord_channel_id, created_at) 
        VALUES (?, ?, ?, ?, ?, datetime('now'))`
-    ).run(spaceId, userId, name, discordWebhookUrl, discordChannelId);
+    ).run(spaceId, userId, name, initialDiscordWebhookUrl, initialDiscordChannelId);
 
     const newSpace = db.prepare('SELECT * FROM cloud_spaces WHERE id = ?').get(spaceId);
 
     if (userId) {
         await createUserNotification({
             userId,
-            message: `Votre nouvel espace cloud "${name}" a été créé avec succès.`,
+            message: `Votre nouvel espace cloud "${name}" a été créé. L'intégration Discord est en cours...`,
             type: 'success',
             link: `/dashboard/cloud` 
         });
     }
 
-    // Send notification to general Discord webhook if URL is configured
     if (DISCORD_GENERAL_WEBHOOK_URL) {
       try {
         const discordPayload = {
-          content: `Nouvel espace cloud PANDA créé ! Préparez-vous à intervenir, cher Bot !`,
+          content: `Nouvelle demande de création d'Espace Cloud PANDA détectée. Bot, à toi de jouer !`,
           embeds: [{
-            title: "Requête de Création d'Espace Cloud PANDA",
-            color: 0x38b26c, // PANDA Green
+            title: "Requête de Création d'Espace Cloud PANDA", // Title your bot expects
+            color: 0x38b26c, 
             fields: [
               { name: "Nom de l'espace", value: name, inline: true },
               { name: "Utilisateur PANDA", value: userPandaUsername || 'N/A', inline: true },
-              { name: "ID Utilisateur PANDA", value: `\`${userId}\``, inline: false },
-              { name: "ID Espace Cloud PANDA", value: `\`${spaceId}\``, inline: false },
+              { name: "ID Utilisateur PANDA", value: `\`${userId}\``, inline: false }, // Bot expects raw ID string
+              { name: "ID Espace Cloud PANDA", value: `\`${spaceId}\``, inline: false }, // Bot expects raw ID string
             ],
-            footer: { text: "PANDA Ecosystem - Initialisation d'Espace Cloud" },
+            footer: { text: "PANDA Ecosystem - Cloud Space Creation Request" },
             timestamp: new Date().toISOString(),
           }]
         };
@@ -119,23 +118,22 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(discordPayload),
         }).then(response => {
           if (!response.ok) {
-            console.error(`Failed to send Discord notification for new cloud space ${spaceId}. Status: ${response.status}`);
+            console.error(`Failed to send initial Discord notification for new cloud space ${spaceId}. Status: ${response.status}`);
             response.json().then(data => console.error("Discord error data:", data)).catch(() => {});
           } else {
-            console.log(`Successfully sent Discord notification for new cloud space ${spaceId}.`);
+            console.log(`Successfully sent initial Discord notification for new cloud space ${spaceId} to general webhook.`);
           }
         }).catch(err => {
-          console.error(`Error sending Discord notification for new cloud space ${spaceId}:`, err);
+          console.error(`Error sending initial Discord notification for new cloud space ${spaceId}:`, err);
         });
       } catch (discordError) {
-        console.error('Error preparing or sending Discord notification:', discordError);
+        console.error('Error preparing or sending initial Discord notification:', discordError);
       }
     } else {
-        console.warn("DISCORD_GENERAL_WEBHOOK_URL is not set. Skipping Discord notification for new cloud space.");
+        console.warn("DISCORD_GENERAL_WEBHOOK_URL is not set. Skipping initial Discord notification for new cloud space.");
     }
 
-
-    return NextResponse.json({ message: 'Cloud space created successfully. Initialisation Discord en cours si configurée.', cloudSpace: newSpace }, { status: 201 });
+    return NextResponse.json({ message: 'Cloud space creation initiated. Discord bot will process the integration.', cloudSpace: newSpace }, { status: 201 });
 
   } catch (error) {
     if (error instanceof ZodError) {

@@ -101,6 +101,12 @@ export const CloudSpaceSchema = CloudSpaceCreateSchema.extend({
 });
 export type CloudSpace = z.infer<typeof CloudSpaceSchema>;
 
+export const DiscordIntegrationUpdateSchema = z.object({
+  private_webhook_url: z.string().url("Invalid private webhook URL format."),
+  private_channel_id: z.string().min(1, "Private channel ID cannot be empty."),
+});
+export type DiscordIntegrationUpdateInput = z.infer<typeof DiscordIntegrationUpdateSchema>;
+
 
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>;
 export type UserLoginInput = z.infer<typeof UserLoginSchema>;
@@ -162,7 +168,7 @@ export const RolesConfig = {
     maxCustomProxies: 3,
     maxMiniServers: 3,
     maxApiAICallsPerDay: 1000,
-    maxVpnConnections: 1,
+    maxVpnConnections: 1, // Premium gets basic VPN
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -175,7 +181,7 @@ export const RolesConfig = {
     maxCustomProxies: 5,
     maxMiniServers: 5,
     maxApiAICallsPerDay: 5000,
-    maxVpnConnections: 1,
+    maxVpnConnections: 1, // Premium+ gets advanced VPN
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -188,7 +194,7 @@ export const RolesConfig = {
     maxCustomProxies: 10,
     maxMiniServers: 10,
     maxApiAICallsPerDay: 20000,
-    maxVpnConnections: 1,
+    maxVpnConnections: 1, // Endium gets enterprise VPN
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
@@ -228,3 +234,4 @@ export const NotificationDisplaySchema = NotificationSchema.extend({
   isRead: z.boolean(),
 });
 export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
+
