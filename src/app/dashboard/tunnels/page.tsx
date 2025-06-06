@@ -115,15 +115,15 @@ export default function TunnelsDashboardPage() {
         <Waypoints className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les
+          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les&nbsp;
           {userQuotaConfig.maxTunnels === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong>
           )}
-          {" "}autorisés pour votre grade {UserRoleDisplayConfig[userRole].label}.
+          &nbsp;autorisés pour votre grade {UserRoleDisplayConfig[userRole].label}.
           {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
-            <span className="text-destructive font-medium"> Vous avez atteint votre limite.</span>
+            <span className="text-destructive font-medium ml-1"> Vous avez atteint votre limite.</span>
           )}
         </AlertDescription>
       </Alert>
@@ -222,6 +222,8 @@ export default function TunnelsDashboardPage() {
           ))}
         </div>
       )}
+       <p className="text-center text-xs text-muted-foreground mt-10 italic">PANDA: Proxying And Network Direct Access</p>
     </div>
   );
 }
+    

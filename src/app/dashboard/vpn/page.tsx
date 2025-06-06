@@ -67,7 +67,7 @@ export default function VpnPage() {
         <Wifi className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Connexions VPN</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
           {userQuotaConfig.maxVpnConnections === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
@@ -108,3 +108,4 @@ export default function VpnPage() {
     </div>
   );
 }
+    

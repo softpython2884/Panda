@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const userServicesCountResult = db.prepare('SELECT COUNT(*) as count FROM services WHERE user_id = ?').get(userId) as { count: number } | undefined;
     const userServicesCount = userServicesCountResult ? userServicesCountResult.count : 0;
     
-    const quotaConfig = RolesConfig[userRole] || RolesConfig.FREE;
+    const quotaConfig = RolesConfig[userRole] || RolesConfig.FREE; // Default to FREE if role is somehow undefined
     if (quotaConfig.maxTunnels !== Infinity && userServicesCount >= quotaConfig.maxTunnels) {
       return NextResponse.json({ error: 'Tunnel quota reached for your current grade. Please upgrade or remove existing tunnels.' }, { status: 403 });
     }
@@ -122,3 +122,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+    

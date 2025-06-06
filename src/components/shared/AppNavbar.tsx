@@ -15,37 +15,48 @@ export default function AppNavbar() {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const { toast } = useToast();
 
-  const fetchNotificationCount = useCallback(async () => {
+  const fetchNotificationCount = useCallback(async (isInitialLoad = false) => {
     if (!user) {
       setUnreadNotificationsCount(0);
+      setIsLoadingNotifications(false); // Ensure loading is false if no user
       return;
     }
-    // Only set loading if not already loading to prevent visual jitter on rapid calls
-    if (!isLoadingNotifications) setIsLoadingNotifications(true);
+    // Only set loading if not already loading to prevent visual jitter on rapid calls,
+    // or if it's the initial load triggered by user state change.
+    if (!isLoadingNotifications || isInitialLoad) {
+        setIsLoadingNotifications(true);
+    }
+    
     try {
       const response = await fetch('/api/notifications'); 
       if (response.ok) {
         const data = await response.json();
         setUnreadNotificationsCount(data.unreadCount || 0);
       } else {
+        // Don't toast error here to avoid spamming if API is temporarily down
+        console.error("Failed to fetch notification count:", response.status);
         setUnreadNotificationsCount(0);
       }
     } catch (error) {
+      console.error("Error fetching notification count:", error);
       setUnreadNotificationsCount(0);
     } finally {
       setIsLoadingNotifications(false);
     }
-  }, [user, isLoadingNotifications]); // Added isLoadingNotifications to dependency array
+  }, [user]); // Removed isLoadingNotifications from deps, added setUnreadNotificationsCount
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
     if (user) {
-      fetchNotificationCount();
-      // Optional: set an interval to poll for notification count
-      const intervalId = setInterval(fetchNotificationCount, 60000); // e.g., every 1 minute
-      return () => clearInterval(intervalId);
+      fetchNotificationCount(true); // Initial load with user
+      intervalId = setInterval(() => fetchNotificationCount(false), 60000); // Poll every minute
     } else {
-      setUnreadNotificationsCount(0);
+      setUnreadNotificationsCount(0); // Reset if user logs out
+      setIsLoadingNotifications(false);
     }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [user, fetchNotificationCount]);
 
 
@@ -78,7 +89,7 @@ export default function AppNavbar() {
                   <UserCircle className="h-4 w-4" /> Settings
                 </Link>
               </Button>
-              <Popover onOpenChange={(open) => { if (open) fetchNotificationCount(); }}>
+              <Popover onOpenChange={(open) => { if (open) fetchNotificationCount(false); }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
                     {isLoadingNotifications ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}
@@ -117,4 +128,5 @@ export default function AppNavbar() {
     </header>
   );
 }
+    
     

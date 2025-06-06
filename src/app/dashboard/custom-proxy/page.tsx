@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Network, Construction, Link2 as LinkIcon, Gauge, Infinity as InfinityIcon } from "lucide-react";
+import { Network, Construction, Link as LinkIcon, Gauge, Infinity as InfinityIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
@@ -38,13 +38,13 @@ export default function CustomProxyPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Proxys Personnalisés</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :&nbsp;
           {userQuotaConfig.maxCustomProxies === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxCustomProxies}</strong>
           )}
-          {" "} proxy(s) personnalisé(s).
+          &nbsp;proxy(s) personnalisé(s).
         </AlertDescription>
       </Alert>
 
@@ -55,3 +55,4 @@ export default function CustomProxyPage() {
     </div>
   );
 }
+    

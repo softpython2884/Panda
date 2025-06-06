@@ -35,7 +35,7 @@ interface NavItem {
 interface NavGroup {
   groupTitle: string;
   items: NavItem[];
-  defaultOpen?: boolean;
+  defaultOpen?: boolean; // This will control which accordions are open by default
   groupIcon?: React.ElementType;
 }
 
@@ -45,11 +45,12 @@ const sidebarNavGroups: NavGroup[] = [
   {
     groupTitle: "Mes Services PANDA",
     groupIcon: Server,
-    defaultOpen: true,
+    defaultOpen: false, // Ensure this is not open by default unless specified
     items: [
       { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Waypoints },
       { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
       { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
+      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: HardDrive, soon: true, endiumFeature: true },
       { title: "Bases de Données Partagées", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
     ],
   },
@@ -63,10 +64,9 @@ const sidebarNavGroups: NavGroup[] = [
     ],
   },
   {
-    groupTitle: "Hébergement Spécialisé & DNS",
+    groupTitle: "Domaines & DNS",
     groupIcon: Layers,
     items: [
-      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true },
       { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
       { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Layers, soon: true, premiumFeature: true, endiumFeature: true },
       { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
@@ -112,7 +112,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     let badgeText = item.soon ? "Bientôt" : null;
     let badgeClass = item.soon ? "bg-accent text-accent-foreground" : "";
 
-    if (!badgeText) { // Prioritize "Bientôt" then grade badges
+    if (!badgeText) {
       if (item.endiumFeature) {
           badgeText = "ENDIUM";
           badgeClass = "bg-yellow-400 text-yellow-900";
@@ -124,7 +124,6 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
           badgeClass = "bg-blue-400 text-blue-900";
       }
     }
-
 
     const LinkComponent = (
       <Button
@@ -151,11 +150,13 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     return isMobile ? <NavLinkWrapper key={`${itemKey}-wrapper`} asChild>{LinkComponent}</NavLinkWrapper> : <div key={`${itemKey}-wrapper`}>{LinkComponent}</div>;
   };
 
-  const defaultOpenAccordionItems = sidebarNavGroups.filter(g => g.defaultOpen).map(g => g.groupTitle);
+  const defaultOpenAccordionItems = sidebarNavGroups
+    .filter(g => g.defaultOpen) // Only open groups explicitly marked with defaultOpen: true
+    .map(g => g.groupTitle);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b md:border-none"> {/* Ajout padding et bordure pour le lien dashboard solo */}
+      <div className="p-4 border-b md:border-none">
         {renderNavItem(mainDashboardItem, "main-dashboard-link", true)}
       </div>
       <Accordion type="multiple" defaultValue={defaultOpenAccordionItems} className="w-full px-4 py-2 space-y-1 flex-grow overflow-y-auto">
@@ -199,3 +200,4 @@ export default function DashboardSidebar({ isMobileView, setIsOpen }: DashboardS
     </div>
   );
 }
+    
