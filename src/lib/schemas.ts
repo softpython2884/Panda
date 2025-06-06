@@ -43,6 +43,9 @@ export const PANDA_TUNNEL_MAIN_HOST = (envPandaTunnelMainHost && envPandaTunnelM
 const envPandaAdminEmail = process.env.PANDA_ADMIN_EMAIL;
 export const PANDA_ADMIN_EMAIL = (envPandaAdminEmail && envPandaAdminEmail.trim() !== "") ? envPandaAdminEmail.trim() : undefined;
 
+const envDiscordGeneralWebhookUrl = process.env.DISCORD_GENERAL_WEBHOOK_URL;
+export const DISCORD_GENERAL_WEBHOOK_URL = (envDiscordGeneralWebhookUrl && envDiscordGeneralWebhookUrl.trim() !== "") ? envDiscordGeneralWebhookUrl.trim() : undefined;
+
 
 export const frpServiceTypes = ["http", "https", "tcp", "udp", "stcp", "xtcp"] as const;
 export type FrpServiceType = (typeof frpServiceTypes)[number];
@@ -86,7 +89,6 @@ export const ServiceSchema = FrpServiceSchema;
 export const CloudSpaceCreateSchema = z.object({
   name: z.string().min(3, "Cloud space name must be at least 3 characters long.").max(50, "Cloud space name must be 50 characters or less.")
     .regex(/^[a-zA-Z0-9-_ ]+$/, "Name can only contain letters, numbers, hyphens, underscores, and spaces."),
-  // discordWebhookUrl: z.string().url("Invalid Discord Webhook URL format.").optional().nullable(), // For later when user can provide it
 });
 export type CloudSpaceCreateInput = z.infer<typeof CloudSpaceCreateSchema>;
 
@@ -119,7 +121,7 @@ export const UserRoleDisplayConfig: Record<UserRole, { label: string; className:
 };
 
 
-export const API_TOKEN_SCOPES = ["service:read", "service:write", "profile:read"] as const; // Example scopes
+export const API_TOKEN_SCOPES = ["service:read", "service:write", "profile:read"] as const;
 export type ApiTokenScope = typeof API_TOKEN_SCOPES[number];
 
 export const ApiTokenCreateSchema = z.object({
@@ -132,9 +134,9 @@ export const ApiTokenDisplaySchema = z.object({
     id: z.string(),
     name: z.string(),
     tokenPrefix: z.string(),
-    lastUsedAt: z.string().nullable(), 
-    expiresAt: z.string().nullable(), 
-    createdAt: z.string(), 
+    lastUsedAt: z.string().nullable(),
+    expiresAt: z.string().nullable(),
+    createdAt: z.string(),
 });
 export type ApiTokenDisplay = z.infer<typeof ApiTokenDisplaySchema>;
 
@@ -143,13 +145,13 @@ export const RolesConfig = {
   FREE: {
     label: "Free Panda",
     maxTunnels: 2,
-    maxCloudServers: 1, 
+    maxCloudServers: 1,
     maxCustomProxies: 1,
     maxMiniServers: 1,
     maxApiAICallsPerDay: 100,
-    maxVpnConnections: 0, 
-    canUseCustomDnsSubdomains: false, 
-    canUseOwnDomains: false, 
+    maxVpnConnections: 0,
+    canUseCustomDnsSubdomains: false,
+    canUseOwnDomains: false,
     canUseWebmail: false,
     canUseVMs: false,
   },
@@ -173,7 +175,7 @@ export const RolesConfig = {
     maxCustomProxies: 5,
     maxMiniServers: 5,
     maxApiAICallsPerDay: 5000,
-    maxVpnConnections: 1, 
+    maxVpnConnections: 1,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: false,
     canUseWebmail: false,
@@ -186,7 +188,7 @@ export const RolesConfig = {
     maxCustomProxies: 10,
     maxMiniServers: 10,
     maxApiAICallsPerDay: 20000,
-    maxVpnConnections: 1, 
+    maxVpnConnections: 1,
     canUseCustomDnsSubdomains: true,
     canUseOwnDomains: true,
     canUseWebmail: true,
@@ -217,12 +219,11 @@ export const NotificationSchema = z.object({
   type: NotificationTypeSchema.default('info'),
   link: z.string().url().optional().nullable(),
   isRead: z.boolean().default(false),
-  createdAt: z.string().datetime(), // Should be ISO string
+  createdAt: z.string().datetime(),
   readAt: z.string().datetime().optional().nullable(),
 });
 export type Notification = z.infer<typeof NotificationSchema>;
 
-// For API responses, we might transform is_read from 0/1 to boolean
 export const NotificationDisplaySchema = NotificationSchema.extend({
   isRead: z.boolean(),
 });
