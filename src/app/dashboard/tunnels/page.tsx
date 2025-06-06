@@ -115,7 +115,7 @@ export default function TunnelsDashboardPage() {
         <Waypoints className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
         <AlertDescription>
-          Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+          <span className="block">Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
           {userQuotaConfig.maxTunnels === Infinity ? (
             <span className="inline-flex items-center gap-1">
               <InfinityIcon className="h-4 w-4 text-green-600" /> 
@@ -126,8 +126,9 @@ export default function TunnelsDashboardPage() {
               <strong className="text-primary">{services.length}</strong> sur <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong> tunnel(s) utilisé(s).
             </span>
           )}
+          </span>
           {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
-            <span className="text-destructive font-medium ml-1"> Vous avez atteint votre limite.</span>
+            <span className="text-destructive font-medium ml-1">Vous avez atteint votre limite.</span>
           )}
         </AlertDescription>
       </Alert>
@@ -232,6 +233,4 @@ export default function TunnelsDashboardPage() {
     </div>
   );
 }
-    
-
     

@@ -38,7 +38,7 @@ export default function CustomProxyPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Proxys Personnalisés</AlertTitle>
         <AlertDescription>
-          Votre grade ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :&nbsp;
+          <span className="block">Votre grade ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :&nbsp;
             {userQuotaConfig.maxCustomProxies === Infinity ? (
                  <span className="inline-flex items-center gap-1">
                     <InfinityIcon className="h-4 w-4 text-green-600" /> 
@@ -49,13 +49,14 @@ export default function CustomProxyPage() {
                     <strong className="text-primary">{userQuotaConfig.maxCustomProxies}</strong> proxy(s) personnalisé(s).
                 </span>
             )}
+            </span>
         </AlertDescription>
       </Alert>
 
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">
+       <p className="text-center text-xs text-muted-foreground mt-10 italic">
         <span className="text-primary">P</span>ath <span className="text-primary">A</span>nd <span className="text-primary">N</span>etwork <span className="text-primary">D</span>omain <span className="text-primary">A</span>pportioner
       </p>
     </div>

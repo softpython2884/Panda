@@ -45,8 +45,8 @@ export default function CustomDomainsPage() {
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">
-         <span className="text-primary">P</span>ersonalized <span className="text-primary">A</span>nd <span className="text-primary">N</span>etworked <span className="text-primary">D</span>omain <span className="text-primary">A</span>cquisition
+       <p className="text-center text-xs text-muted-foreground mt-10 italic">
+        <span className="text-primary">P</span>ersonalized <span className="text-primary">A</span>nd <span className="text-primary">N</span>etworked <span className="text-primary">D</span>omain <span className="text-primary">A</span>cquisition
       </p>
     </div>
   );

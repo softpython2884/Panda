@@ -37,7 +37,7 @@ export default function WebmailPage() {
        <Button asChild variant="outline" className="mt-8">
          <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
-       <p className="text-xs text-muted-foreground mt-10 italic">
+       <p className="text-center text-xs text-muted-foreground mt-10 italic">
         <span className="text-primary">P</span>ersonal <span className="text-primary">A</span>ccess <span className="text-primary">N</span>etworked <span className="text-primary">D</span>igital <span className="text-primary">A</span>ddressing
       </p>
     </div>

@@ -32,7 +32,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = useCallback(async () => {
-    setIsCheckingAuthSession(true);
+    // Ne pas remettre setIsCheckingAuthSession à true ici si une session est déjà en cours d'établissement par login/register
+    // setIsCheckingAuthSession(true); // Initial check is fine
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
@@ -45,7 +46,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to fetch user", error);
       setUser(null);
     } finally {
-      setIsCheckingAuthSession(false);
+      setIsCheckingAuthSession(false); // This is the main point where initial check completes
     }
   }, []);
 
@@ -54,6 +55,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchUser]);
 
   const login = async (email: string, passwordInput: string) => {
+    setIsCheckingAuthSession(true); // Indiquer qu'une opération d'auth est en cours
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -65,18 +67,24 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.user);
         const displayName = data.user.username || data.user.email;
         toast({ title: "Login Successful", description: `Welcome back, ${displayName}!` });
+        setIsCheckingAuthSession(false); // Fin de l'opération d'auth
         return true;
       } else {
+        setUser(null);
         toast({ title: "Login Failed", description: data.error || "Invalid credentials", variant: "destructive" });
+        setIsCheckingAuthSession(false); // Fin de l'opération d'auth
         return false;
       }
     } catch (error) {
+      setUser(null);
       toast({ title: "Login Error", description: "An unexpected error occurred.", variant: "destructive" });
+      setIsCheckingAuthSession(false); // Fin de l'opération d'auth
       return false;
     }
   };
 
   const register = async (username: string, email: string, passwordInput: string) => {
+    setIsCheckingAuthSession(true); // Indiquer qu'une opération d'auth est en cours
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -85,28 +93,35 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       if (res.ok && data.user) {
-        // Auto-login the user after successful registration
-        setUser(data.user);
+        setUser(data.user); // Auto-login
         const displayName = data.user.username || data.user.email;
         toast({ title: "Registration Successful", description: `Welcome, ${displayName}! Your account is created and you are now logged in.` });
+        setIsCheckingAuthSession(false); // Fin de l'opération d'auth
         return true;
       } else {
+        setUser(null);
         toast({ title: "Registration Failed", description: data.error || "Could not register user.", variant: "destructive" });
+        setIsCheckingAuthSession(false); // Fin de l'opération d'auth
         return false;
       }
     } catch (error) {
+      setUser(null);
       toast({ title: "Registration Error", description: "An unexpected error occurred.", variant: "destructive" });
+      setIsCheckingAuthSession(false); // Fin de l'opération d'auth
       return false;
     }
   };
 
   const logout = async () => {
+    setIsCheckingAuthSession(true); // Indiquer qu'une opération d'auth est en cours
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
        toast({ title: "Logout Error", description: "Failed to log out.", variant: "destructive" });
+    } finally {
+       setIsCheckingAuthSession(false); // Fin de l'opération d'auth
     }
   };
 
