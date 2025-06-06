@@ -27,7 +27,7 @@ export default function WebmailPage() {
           </p>
             <Alert className="mt-4">
                 <ShieldCheck className="h-5 w-5" />
-                <AlertTitle className="font-semibold">Grade ENDIUM Recommandé</AlertTitle>
+                <AlertTitle className="font-semibold">Grade ENDIUM Requis</AlertTitle>
                 <AlertDescription>
                 L'utilisation complète du webmail avec des adresses email personnalisées sera typiquement liée à la gestion de vos propres domaines, une fonctionnalité du grade <strong className="text-yellow-600 font-semibold">ENDIUM</strong>.
                 </AlertDescription>
@@ -35,8 +35,9 @@ export default function WebmailPage() {
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personal Access Networked Digital Addressing</p>
     </div>
   );
 }

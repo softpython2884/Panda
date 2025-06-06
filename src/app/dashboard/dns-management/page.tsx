@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Globe, Construction, Route, ShieldCheck, Settings2, ListChecks, BadgePercent, CheckCircle } from "lucide-react";
+import { Globe, Construction, Route, ShieldCheck, Settings2, ListChecks, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DnsManagementPage() {
@@ -28,7 +28,7 @@ export default function DnsManagementPage() {
             <AlertTitle className="font-semibold">Fonctionnalités par Grade</AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>PREMIUM :</strong> Gestion d'enregistrements DNS sous <code className="bg-muted/50 px-0.5 rounded">*.pandadns.nationquest.fr</code>.</li>
+                <li><strong>PREMIUM :</strong> Gestion d'enregistrements DNS pour vos services sous <code className="bg-muted/50 px-0.5 rounded">votresousdomaine.pandadns.nationquest.fr</code>.</li>
                 <li><strong>ENDIUM :</strong> Toutes les fonctionnalités PREMIUM, plus l'enregistrement, le transfert, et la gestion complète de vos propres noms de domaine (incluant les options ci-dessous).</li>
               </ul>
             </AlertDescription>
@@ -37,16 +37,16 @@ export default function DnsManagementPage() {
           <div className="p-4 border rounded-md">
             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><ListChecks /> Fonctionnalités Prévues (principalement pour ENDIUM avec domaines propres) :</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Liaison de vos propres noms de domaine et gestion complète de leur zone DNS.</li>
+              <li>Liaison de vos propres noms de domaine et gestion complète de leur zone DNS (A, AAAA, CNAME, MX, TXT, SRV, etc.).</li>
               <li>Option DNS Anycast.</li>
-              <li>Hébergement Web et e-mail de base (ex: 100Mo) potentiellement inclus.</li>
+              <li>Hébergement Web et e-mail de base (ex: 100Mo) potentiellement inclus avec votre domaine.</li>
               <li>Gestion des sous-domaines et multisites.</li>
               <li>Protection contre le transfert de domaine.</li>
               <li>Délégation Sécurisée avec DNSSEC.</li>
               <li>Configuration de l'affichage des informations WHOIS.</li>
               <li>Adresses e-mail anti-spam associées à vos domaines.</li>
               <li>Gestion des serveurs DNS pour vos domaines.</li>
-              <li>Redirections web.</li>
+              <li>Redirections web (301, 302, masquées).</li>
               <li>DynHOST pour les adresses IP dynamiques.</li>
               <li>Configuration GLUE pour personnaliser vos serveurs DNS.</li>
               <li>Gestion des enregistrements DS pour DNSSEC.</li>
@@ -65,8 +65,9 @@ export default function DnsManagementPage() {
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Programmable And Networked Domain Administration</p>
     </div>
   );
 }

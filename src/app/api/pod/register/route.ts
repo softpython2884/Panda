@@ -25,9 +25,11 @@ export async function POST(request: NextRequest) {
     userRole = decodedUser.role;
 
     // Check quota
-    const userServicesCount = db.prepare('SELECT COUNT(*) as count FROM services WHERE user_id = ?').get(userId) as { count: number };
+    const userServicesCountResult = db.prepare('SELECT COUNT(*) as count FROM services WHERE user_id = ?').get(userId) as { count: number } | undefined;
+    const userServicesCount = userServicesCountResult ? userServicesCountResult.count : 0;
+    
     const quotaConfig = RolesConfig[userRole] || RolesConfig.FREE;
-    if (quotaConfig.maxTunnels !== Infinity && userServicesCount.count >= quotaConfig.maxTunnels) {
+    if (quotaConfig.maxTunnels !== Infinity && userServicesCount >= quotaConfig.maxTunnels) {
       return NextResponse.json({ error: 'Tunnel quota reached for your current grade. Please upgrade or remove existing tunnels.' }, { status: 403 });
     }
 

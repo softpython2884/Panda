@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon } from "lucide-react";
+import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link2 as LinkIcon } from "lucide-react"; // Added MessageSquare, LinkIcon
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas";
@@ -21,24 +21,38 @@ export default function CloudDashboardPage() {
       <p className="text-xl text-muted-foreground max-w-2xl">
         Cette section est en cours de développement. Hébergez vos propres serveurs cloud et partagez des fichiers.
       </p>
-      <Card className="w-full max-w-md mt-8 shadow-lg">
+      <Card className="w-full max-w-lg mt-8 shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline">Bientôt Disponible</CardTitle>
+          <CardTitle className="font-headline">Bientôt Disponible: Espace Cloud Intégré</CardTitle>
           <CardDescription>Gérez vos serveurs cloud personnels et vos fichiers, avec un stockage illimité par serveur.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <CloudCog className="h-16 w-16 text-accent mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">
-            Nous travaillons activement à l'intégration de fonctionnalités de stockage cloud sécurisé et facile à utiliser.
-          </p>
+        <CardContent className="space-y-4 text-left">
+          <div className="flex justify-center items-center gap-4">
+            <CloudCog className="h-12 w-12 text-accent" />
+            <MessageSquare className="h-12 w-12 text-blue-500" /> {/* Discord-like icon */}
+            <LinkIcon className="h-12 w-12 text-green-500" /> {/* Webhook-like icon */}
+          </div>
+          <Alert>
+            <AlertTitle className="font-semibold">Fonctionnalités Prévues :</AlertTitle>
+            <AlertDescription>
+                <ul className="list-disc pl-5 space-y-1 mt-2">
+                    <li>Intégration avec un bot Discord : À la création d'un "espace cloud", un salon privé sera créé sur un serveur Discord dédié.</li>
+                    <li>Webhook personnalisé : Un webhook au nom de l'utilisateur sera généré dans ce salon.</li>
+                    <li>URL d'accès unique : Votre espace cloud sera accessible via une URL comme <code className="bg-muted px-1 rounded">https://cloud.panda.nationquest.fr/?webhook=VOTRE_URL_WEBHOOK</code>.</li>
+                    <li>Partage : Le partage d'un cloud créera un second webhook dans le même salon, permettant de tracer les accès partagés.</li>
+                    <li>Visualisation des accès : Le créateur pourra voir les derniers utilisateurs connectés à son cloud.</li>
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">Les identifiants du bot Discord seraient idéalement stockés dans un fichier <code className="bg-muted px-1 rounded">.env.cloud</code>.</p>
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
-      <Alert className="w-full max-w-md mt-4">
+      <Alert className="w-full max-w-lg mt-4">
         <Server className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Serveurs Cloud</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de créer jusqu'à : {" "}
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de créer jusqu'à :
           {userQuotaConfig.maxCloudServers === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
@@ -48,7 +62,7 @@ export default function CloudDashboardPage() {
         </AlertDescription>
       </Alert>
 
-      <Alert className="w-full max-w-md mt-4">
+      <Alert className="w-full max-w-lg mt-4">
         <Share2 className="h-5 w-5" />
         <AlertTitle>Partage de Serveurs Cloud (Prochainement)</AlertTitle>
         <AlertDescription>
@@ -58,8 +72,9 @@ export default function CloudDashboardPage() {
       </Alert>
 
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+        <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personal Archive & Networked Data Access</p>
     </div>
   );
 }

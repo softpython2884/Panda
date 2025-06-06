@@ -27,8 +27,9 @@ export default function SshTerminalPage() {
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Proxied Access, Near-Direct Administration</p>
     </div>
   );
 }

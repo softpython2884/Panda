@@ -54,7 +54,7 @@ export default function AiStudioPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à : {" "}
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :
           {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /> Appels / jour</span>
           ) : (
@@ -66,8 +66,9 @@ export default function AiStudioPage() {
 
 
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personalized AI & Networked Development Arena</p>
     </div>
   );
 }

@@ -38,7 +38,7 @@ export default function CustomProxyPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Proxys Personnalisés</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à : {" "}
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous permet de configurer jusqu'à :
           {userQuotaConfig.maxCustomProxies === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
@@ -49,8 +49,9 @@ export default function CustomProxyPage() {
       </Alert>
 
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Path And Network Domain Apportioner</p>
     </div>
   );
 }

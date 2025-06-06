@@ -13,12 +13,12 @@ export default function DatabaseSharingPage() {
        <Construction className="h-24 w-24 text-primary mb-6" />
       <h1 className="text-4xl font-headline font-bold text-primary">Hébergement & Partage de Bases de Données</h1>
       <p className="text-xl text-muted-foreground max-w-2xl">
-        Cette section est en cours de développement. Elle vous permettra d'héberger et de partager des fichiers de base de données (ex: .db, .sqlite) de manière sécurisée.
+        Cette section est en cours de développement. Elle vous permettra d'héberger vos fichiers de base de données (ex: .db, .sqlite) et de les partager de manière sécurisée via un lien.
       </p>
       <Card className="w-full max-w-lg mt-8 shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline">Bientôt Disponible</CardTitle>
-          <CardDescription>Hébergez vos fichiers de base de données et partagez-les facilement via un lien sécurisé.</CardDescription>
+          <CardDescription>Hébergez et partagez vos fichiers de base de données facilement.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-center items-center gap-4">
@@ -36,8 +36,9 @@ export default function DatabaseSharingPage() {
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Portable And Networked Database Archives</p>
     </div>
   );
 }

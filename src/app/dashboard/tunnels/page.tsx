@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas"; // UserRoleDisplayConfig
+import { RolesConfig, UserRoleDisplayConfig } from "@/lib/schemas"; 
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 
@@ -40,7 +40,7 @@ export default function TunnelsDashboardPage() {
   const { toast } = useToast();
 
   const userRole = user?.role || 'FREE';
-  const userQuotaConfig = RolesConfig[userRole];
+  const userQuotaConfig = user ? RolesConfig[userRole] : RolesConfig.FREE;
   const canCreateMoreTunnels = user ? userQuotaConfig.maxTunnels === Infinity || services.length < userQuotaConfig.maxTunnels : false;
 
 
@@ -114,8 +114,8 @@ export default function TunnelsDashboardPage() {
       <Alert variant="default" className="shadow-sm">
         <Waypoints className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
-        <AlertDescription>
-          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les{" "}
+        <AlertDescription className="inline-flex items-center gap-1">
+          Vous utilisez actuellement <strong className="text-primary">{services.length}</strong> tunnel(s) sur les
           {userQuotaConfig.maxTunnels === Infinity ? (
             <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
@@ -225,4 +225,3 @@ export default function TunnelsDashboardPage() {
     </div>
   );
 }
-

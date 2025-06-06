@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { HardDrive, Construction, ServerCog, ShieldCheck, Gauge } from "lucide-react"; // Added Gauge
+import { HardDrive, Construction, ServerCog, ShieldCheck, Gauge, Server as ServerIcon } from "lucide-react"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function VirtualMachinesPage() {
@@ -18,7 +18,7 @@ export default function VirtualMachinesPage() {
       <Card className="w-full max-w-lg mt-8 shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center justify-center gap-2">
-            <ServerCog className="h-7 w-7 text-accent" /> Bientôt Disponible
+            <ServerIcon className="h-7 w-7 text-accent" /> Bientôt Disponible
           </CardTitle>
           <CardDescription>Déployez vos propres serveurs virtuels en quelques clics.</CardDescription>
         </CardHeader>
@@ -44,8 +44,9 @@ export default function VirtualMachinesPage() {
         </CardContent>
       </Card>
        <Button asChild variant="outline" className="mt-8">
-         <Link href="/dashboard">Retour à l'Aperçu</Link>
+         <Link href="/dashboard">Retour au Tableau de Bord</Link>
        </Button>
+       <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Personal Virtual Machine & Networked Deployment Area</p>
     </div>
   );
 }

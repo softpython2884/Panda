@@ -20,32 +20,31 @@ export default function AppNavbar() {
       setUnreadNotificationsCount(0);
       return;
     }
-    setIsLoadingNotifications(true);
+    // Only set loading if not already loading to prevent visual jitter on rapid calls
+    if (!isLoadingNotifications) setIsLoadingNotifications(true);
     try {
-      const response = await fetch('/api/notifications'); // This endpoint returns { notifications, unreadCount }
+      const response = await fetch('/api/notifications'); 
       if (response.ok) {
         const data = await response.json();
         setUnreadNotificationsCount(data.unreadCount || 0);
       } else {
-        // Do not toast error here to avoid spamming, error handled in dropdown
         setUnreadNotificationsCount(0);
       }
     } catch (error) {
-      // console.error("Failed to fetch notification count for navbar:", error);
       setUnreadNotificationsCount(0);
     } finally {
       setIsLoadingNotifications(false);
     }
-  }, [user, toast]);
+  }, [user, isLoadingNotifications]); // Added isLoadingNotifications to dependency array
 
   useEffect(() => {
     if (user) {
       fetchNotificationCount();
-      // Optional: set an interval to poll for notification count, e.g., every 1 minute
-      // const intervalId = setInterval(fetchNotificationCount, 60000);
-      // return () => clearInterval(intervalId);
+      // Optional: set an interval to poll for notification count
+      const intervalId = setInterval(fetchNotificationCount, 60000); // e.g., every 1 minute
+      return () => clearInterval(intervalId);
     } else {
-      setUnreadNotificationsCount(0); // Reset count if user logs out
+      setUnreadNotificationsCount(0);
     }
   }, [user, fetchNotificationCount]);
 
@@ -79,7 +78,7 @@ export default function AppNavbar() {
                   <UserCircle className="h-4 w-4" /> Settings
                 </Link>
               </Button>
-              <Popover onOpenChange={(open) => { if (open) fetchNotificationCount(); /* Refresh on open */ }}>
+              <Popover onOpenChange={(open) => { if (open) fetchNotificationCount(); }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
                     {isLoadingNotifications ? <Loader2 className="h-5 w-5 animate-spin" /> : <Bell className="h-5 w-5" />}

@@ -27,9 +27,9 @@ interface NavItem {
   disabled?: boolean;
   soon?: boolean;
   adminOnly?: boolean;
-  premiumFeature?: boolean; // For Premium and above
-  premiumPlusFeature?: boolean; // For Premium+ and above
-  endiumFeature?: boolean; // For Endium and above
+  premiumFeature?: boolean;
+  premiumPlusFeature?: boolean;
+  endiumFeature?: boolean;
 }
 
 interface NavGroup {
@@ -39,24 +39,18 @@ interface NavGroup {
   groupIcon?: React.ElementType;
 }
 
+const mainDashboardItem: NavItem = { title: "Tableau de Bord", href: "/dashboard", icon: LayoutGrid };
+
 const sidebarNavGroups: NavGroup[] = [
   {
-    groupTitle: "Tableau de Bord",
-    groupIcon: LayoutGrid,
-    defaultOpen: true,
-    items: [
-      { title: "Aperçu", href: "/dashboard", icon: LayoutGrid },
-    ],
-  },
-  {
     groupTitle: "Mes Services PANDA",
-    groupIcon: Server, // Changed icon
+    groupIcon: Server,
+    defaultOpen: true,
     items: [
       { title: "Mes Tunnels", href: "/dashboard/tunnels", icon: Waypoints },
       { title: "Mon Cloud PANDA", href: "/dashboard/cloud", icon: Cloud, soon: true },
       { title: "Mini-Serveurs", href: "/dashboard/mini-servers", icon: ServerCog, soon: true },
-      { title: "Machines Virtuelles", href: "/dashboard/virtual-machines", icon: HardDrive, soon: true, endiumFeature: true },
-      { title: "Bases de Données", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
+      { title: "Bases de Données Partagées", href: "/dashboard/database-sharing", icon: DatabaseZap, soon: true },
     ],
   },
   {
@@ -69,9 +63,10 @@ const sidebarNavGroups: NavGroup[] = [
     ],
   },
   {
-    groupTitle: "Domaines & DNS",
-    groupIcon: Globe, // Changed icon
+    groupTitle: "Hébergement Spécialisé & DNS",
+    groupIcon: Layers,
     items: [
+      { title: "Machines Virtuelles (VMs)", href: "/dashboard/virtual-machines", icon: Server, soon: true, endiumFeature: true },
       { title: "Domaines Personnalisés", href: "/dashboard/custom-domains", icon: Globe, soon: true, endiumFeature: true },
       { title: "Gestion DNS Avancée", href: "/dashboard/dns-management", icon: Layers, soon: true, premiumFeature: true, endiumFeature: true },
       { title: "Webmail PANDA", href: "/dashboard/webmail", icon: Mail, soon: true, endiumFeature: true },
@@ -82,7 +77,7 @@ const sidebarNavGroups: NavGroup[] = [
     groupIcon: Sparkles,
     items: [
       { title: "PANDA AI Studio", href: "/dashboard/ai-studio", icon: Sparkles, soon: true },
-      { title: "Intégrations Services", href: "/dashboard/integrations", icon: Puzzle, soon: true },
+      { title: "Intégrations de Services", href: "/dashboard/integrations", icon: Puzzle, soon: true },
       { title: "Gestion API (Client)", href: "/dashboard/api-management", icon: KeyRound, soon: true },
     ],
   },
@@ -107,7 +102,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
   const { user } = useAuth();
   const NavLinkWrapper = isMobile ? SheetClose : React.Fragment;
 
-  const renderNavItem = (item: NavItem, itemKey: string) => {
+  const renderNavItem = (item: NavItem, itemKey: string, isTopLevel: boolean = false) => {
     if (item.adminOnly && (!user || user.role !== 'ADMIN')) {
         return null; 
     }
@@ -117,17 +112,17 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
     let badgeText = item.soon ? "Bientôt" : null;
     let badgeClass = item.soon ? "bg-accent text-accent-foreground" : "";
 
-    if (!badgeText) {
-        if (item.endiumFeature) {
-            badgeText = "ENDIUM";
-            badgeClass = "bg-yellow-400 text-yellow-900";
-        } else if (item.premiumPlusFeature) {
-            badgeText = "PREMIUM+";
-            badgeClass = "bg-purple-400 text-purple-900";
-        } else if (item.premiumFeature) {
-            badgeText = "PREMIUM";
-            badgeClass = "bg-blue-400 text-blue-900";
-        }
+    if (!badgeText) { // Prioritize "Bientôt" then grade badges
+      if (item.endiumFeature) {
+          badgeText = "ENDIUM";
+          badgeClass = "bg-yellow-400 text-yellow-900";
+      } else if (item.premiumPlusFeature) {
+          badgeText = "PREMIUM+";
+          badgeClass = "bg-purple-400 text-purple-900";
+      } else if (item.premiumFeature) {
+          badgeText = "PREMIUM";
+          badgeClass = "bg-blue-400 text-blue-900";
+      }
     }
 
 
@@ -137,6 +132,7 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
         variant={isActive ? "default" : "ghost"}
         className={cn(
           "w-full justify-start text-base py-3 sm:py-2 sm:text-sm",
+          isTopLevel ? "mb-1" : "",
           isActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
           item.disabled && "opacity-50 cursor-not-allowed",
           item.adminOnly && user?.role === 'ADMIN' && isActive && "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -159,6 +155,9 @@ export function DashboardSidebarNav({ isMobile, onLinkClick }: DashboardSidebarN
 
   return (
     <div className="flex flex-col h-full">
+      <div className="p-4 border-b md:border-none"> {/* Ajout padding et bordure pour le lien dashboard solo */}
+        {renderNavItem(mainDashboardItem, "main-dashboard-link", true)}
+      </div>
       <Accordion type="multiple" defaultValue={defaultOpenAccordionItems} className="w-full px-4 py-2 space-y-1 flex-grow overflow-y-auto">
         {sidebarNavGroups.map((group, groupIndex) => (
           <AccordionItem value={group.groupTitle} key={`group-${group.groupTitle}-${groupIndex}`} className="border-b-0">
@@ -200,4 +199,3 @@ export default function DashboardSidebar({ isMobileView, setIsOpen }: DashboardS
     </div>
   );
 }
-

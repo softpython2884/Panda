@@ -67,14 +67,14 @@ export default function VpnPage() {
         <Wifi className="h-5 w-5" />
         <AlertTitle>Vos Quotas de Connexions VPN</AlertTitle>
         <AlertDescription className="inline-flex items-center gap-1">
-          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à : {" "}
+          Votre grade actuel ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :
           {userQuotaConfig.maxVpnConnections === Infinity ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /> Illimité</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600"><InfinityIcon className="h-4 w-4" /></span>
           ) : (
             <strong className="text-primary">{userQuotaConfig.maxVpnConnections} connexion(s) active(s)</strong>
           )}
           .
-          {!canAccessVpn && <span className="ml-1 text-sm text-destructive"> (Mise à niveau requise pour accéder au VPN)</span>}
+          {!canAccessVpn && userQuotaConfig.maxVpnConnections !== Infinity && <span className="ml-1 text-sm text-destructive"> (Mise à niveau requise pour accéder au VPN)</span>}
         </AlertDescription>
       </Alert>
 
@@ -102,8 +102,9 @@ export default function VpnPage() {
       </div>
 
       <Button asChild variant="outline" className="mt-12">
-        <Link href="/dashboard">Retour à l'Aperçu</Link>
+        <Link href="/dashboard">Retour au Tableau de Bord</Link>
       </Button>
+      <p className="text-xs text-muted-foreground mt-10 italic">PANDA: Private Virtual Network & Data Anonymization</p>
     </div>
   );
 }
