@@ -46,6 +46,11 @@ export const PANDA_ADMIN_EMAIL = (envPandaAdminEmail && envPandaAdminEmail.trim(
 const envDiscordGeneralWebhookUrl = process.env.DISCORD_GENERAL_WEBHOOK_URL;
 export const DISCORD_GENERAL_WEBHOOK_URL = (envDiscordGeneralWebhookUrl && envDiscordGeneralWebhookUrl.trim() !== "") ? envDiscordGeneralWebhookUrl.trim() : undefined;
 
+const envPandaCloudAppBaseUrl = process.env.NEXT_PUBLIC_PANDA_CLOUD_APP_BASE_URL;
+export const PANDA_CLOUD_APP_BASE_URL = (envPandaCloudAppBaseUrl && envPandaCloudAppBaseUrl.trim() !== "")
+  ? envPandaCloudAppBaseUrl.trim()
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? "http://localhost:3000" : "https://cloud.panda.nationquest.fr");
+
 
 export const frpServiceTypes = ["http", "https", "tcp", "udp", "stcp", "xtcp"] as const;
 export type FrpServiceType = (typeof frpServiceTypes)[number];
@@ -97,7 +102,7 @@ export const CloudSpaceSchema = CloudSpaceCreateSchema.extend({
   userId: z.string().uuid(),
   discordWebhookUrl: z.string().url().nullable(),
   discordChannelId: z.string().nullable(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(), // Keep as string, client will parse
 });
 export type CloudSpace = z.infer<typeof CloudSpaceSchema>;
 
@@ -235,3 +240,4 @@ export const NotificationDisplaySchema = NotificationSchema.extend({
 });
 export type NotificationDisplay = z.infer<typeof NotificationDisplaySchema>;
 
+    

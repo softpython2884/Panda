@@ -4,10 +4,10 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIconJs, PlusCircle, Loader2, AlertTriangle, PackageSearch, CheckCircle } from "lucide-react";
+import { CloudCog, Construction, Share2, Server, Infinity as InfinityIcon, MessageSquare, Link as LinkIconJs, PlusCircle, Loader2, AlertTriangle, PackageSearch, CheckCircle, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { RolesConfig, UserRoleDisplayConfig, CloudSpaceCreateSchema, type CloudSpaceCreateInput, type CloudSpace } from "@/lib/schemas";
+import { RolesConfig, UserRoleDisplayConfig, CloudSpaceCreateSchema, type CloudSpaceCreateInput, type CloudSpace, PANDA_CLOUD_APP_BASE_URL } from "@/lib/schemas";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns"; // For robust date formatting
+import { fr } from "date-fns/locale";
 
 
 export default function CloudDashboardPage() {
@@ -94,6 +96,24 @@ export default function CloudDashboardPage() {
       setIsSubmitting(false);
     }
   }
+  
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+      // SQLite date strings are usually 'YYYY-MM-DD HH:MM:SS'
+      // Replace space with 'T' and add 'Z' to ensure UTC parsing if not already there
+      const normalizedDateString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+      const date = new Date(normalizedDateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return format(date, "dd/MM/yyyy HH:mm", { locale: fr });
+    } catch (e) {
+      console.error("Error formatting date:", dateString, e);
+      return 'Invalid Date';
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -188,34 +208,48 @@ export default function CloudDashboardPage() {
           )}
           {!isLoading && !error && cloudSpaces.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cloudSpaces.map((space) => (
-                <Card key={space.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Server className="h-5 w-5 text-primary"/>{space.name}</CardTitle>
-                    <CardDescription>Créé le: {new Date(space.createdAt).toLocaleDateString()}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-xs space-y-1">
-                    <p>ID: <code className="bg-muted px-1 rounded">{space.id}</code></p>
-                    {space.discordChannelId ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="h-4 w-4" />
-                            <span>Salon Discord: <code className="bg-muted px-1 rounded text-green-700">#{space.discordChannelId} (ID)</code></span>
-                        </div>
-                    ) : (
-                      <p className="text-amber-600">Intégration Discord en attente...</p>
-                    )}
-                    {space.discordWebhookUrl ? (
-                      <p className="text-muted-foreground break-all">Webhook privé Discord (pour PANDA): <code className="bg-muted px-1 rounded">{space.discordWebhookUrl.substring(0,35)}...</code></p>
-                    ) : (
-                      <p className="text-muted-foreground italic">Webhook privé Discord non encore configuré par le bot.</p>
-                    )}
-                     <p className="text-muted-foreground mt-1">URL d'accès (Concept): <code className="bg-muted px-1 rounded">https://cloud.panda.nationquest.fr/?webhook=URL_WEBHOOK_PRIVÉ_DU_BOT</code></p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" disabled>Gérer (Bientôt)</Button>
-                  </CardFooter>
-                </Card>
-              ))}
+              {cloudSpaces.map((space) => {
+                const isIntegrationComplete = !!space.discordChannelId && !!space.discordWebhookUrl;
+                let accessUrl = "";
+                if (isIntegrationComplete && space.discordWebhookUrl) {
+                  accessUrl = `${PANDA_CLOUD_APP_BASE_URL}/?webhook=${encodeURIComponent(space.discordWebhookUrl)}`;
+                }
+
+                return (
+                  <Card key={space.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Server className="h-5 w-5 text-primary"/>{space.name}</CardTitle>
+                      <CardDescription>Créé le: {formatDate(space.createdAt)}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-xs space-y-1">
+                      <p>ID: <code className="bg-muted px-1 rounded">{space.id}</code></p>
+                      {isIntegrationComplete && space.discordChannelId ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Salon Discord: <code className="bg-muted px-1 rounded text-green-700">#{space.discordChannelId} (ID)</code></span>
+                          </div>
+                      ) : (
+                        <p className="text-amber-600">Intégration de l&apos;espace Cloud en attente...</p>
+                      )}
+                      {isIntegrationComplete && space.discordWebhookUrl ? (
+                        <p className="text-muted-foreground break-all">Webhook privé Discord (pour PANDA): <code className="bg-muted px-1 rounded">{space.discordWebhookUrl.substring(0,35)}...</code></p>
+                      ) : (
+                        <p className="text-muted-foreground italic">Espace Cloud pas encore configuré par le bot.</p>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex-col items-start gap-2">
+                        {isIntegrationComplete && accessUrl && (
+                           <Button asChild variant="default" size="sm" className="w-full">
+                                <a href={accessUrl} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="mr-2 h-4 w-4"/> Accéder à l'Espace Cloud
+                                </a>
+                           </Button>
+                        )}
+                        <Button variant="outline" size="sm" disabled className="w-full">Gérer (Bientôt)</Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -237,19 +271,19 @@ export default function CloudDashboardPage() {
             <AlertDescription>
                 <ol className="list-decimal pl-5 space-y-2 mt-2">
                     <li><strong>Initiation par l&apos;Utilisateur <span className="text-primary">P.A.N.D.A.</span> :</strong> Vous créez un &quot;Espace Cloud&quot; via cette interface PANDA en fournissant un nom.</li>
-                    <li><strong><span className="text-primary">P.A.N.D.A.</span> Notifie le Webhook Général Discord :</strong> L&apos;application <span className="text-primary">P.A.N.D.A.</span> envoie un message formaté (contenant le nom de l&apos;espace, votre nom d&apos;utilisateur <span className="text-primary">P.A.N.D.A.</span>, l&apos;ID utilisateur <span className="text-primary">P.A.N.D.A.</span>, et un ID unique pour l&apos;espace cloud) au webhook général Discord que vous avez configuré dans PANDA (ex: <code className="bg-muted px-1 rounded text-xs">https://discord.com/api/webhooks/1380580290212397147/...</code> via la variable d&apos;environnement <code className="bg-muted px-1 rounded text-xs">DISCORD_GENERAL_WEBHOOK_URL</code>).</li>
-                    <li><strong>Action du Bot Discord <span className="text-primary">P.A.N.D.A.</span> :</strong> Votre bot Discord (hébergé séparément, par exemple dans un dossier <code className="bg-muted px-1 rounded text-xs">discordbot</code> sur vos serveurs, utilisant son token <code className="bg-muted px-1 rounded text-xs">MTM4M...</code> et l&apos;ID du serveur Discord <code className="bg-muted px-1 rounded text-xs">1380...</code>) écoute les messages arrivant sur ce webhook général.
+                    <li><strong><span className="text-primary">P.A.N.D.A.</span> Notifie le Webhook Général Discord :</strong> L&apos;application <span className="text-primary">P.A.N.D.A.</span> envoie un message formaté (contenant le nom de l&apos;espace, votre nom d&apos;utilisateur <span className="text-primary">P.A.N.D.A.</span>, l&apos;ID utilisateur <span className="text-primary">P.A.N.D.A.</span>, et un ID unique pour l&apos;espace cloud) au webhook général Discord (<code className="bg-muted px-1 rounded text-xs">{DISCORD_GENERAL_WEBHOOK_URL ? DISCORD_GENERAL_WEBHOOK_URL.substring(0,50) + "..." : "NON_CONFIGURÉ"}</code> via la variable d&apos;environnement <code className="bg-muted px-1 rounded text-xs">DISCORD_GENERAL_WEBHOOK_URL</code>).</li>
+                    <li><strong>Action du Bot Discord <span className="text-primary">P.A.N.D.A.</span> :</strong> Votre bot Discord (hébergé séparément, ex: dans <code className="bg-muted px-1 rounded text-xs">discordbot/</code>, utilisant son token et l&apos;ID de votre serveur Discord) écoute les messages arrivant sur ce webhook général.
                         <ul className="list-disc pl-5 space-y-1 mt-1">
                            <li>Quand il détecte le message de PANDA, il crée un nouveau salon textuel privé sur votre serveur Discord (ex: <code className="bg-muted px-1 rounded text-xs">#cloud-votreNomPanda-idCourt</code>).</li>
                            <li>Il génère un webhook Discord unique pour ce nouveau salon privé.</li>
-                           <li>**Crucial :** Le bot appelle ensuite une API <span className="text-primary">P.A.N.D.A.</span> sécurisée (<code className="bg-muted px-1 rounded text-xs">PUT /api/pod/cloud/[ID_ESPACE_CLOUD_PANDA]/discord-integration</code>) pour transmettre à <span className="text-primary">P.A.N.D.A.</span> l&apos;URL de ce webhook privé et l&apos;ID du salon privé.</li>
-                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud &quot;{'{nom_espace}'}&quot; est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) ou poster un message de bienvenue dans le salon privé.</li>
+                           <li>**Crucial :** Le bot appelle ensuite l&apos;API <span className="text-primary">P.A.N.D.A.</span> (<code className="bg-muted px-1 rounded text-xs">PUT /api/pod/cloud/[ID_ESPACE_CLOUD_PANDA]/discord-integration</code>) pour transmettre à <span className="text-primary">P.A.N.D.A.</span> l&apos;URL de ce webhook privé et l&apos;ID du salon privé.</li>
+                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud &quot;{'{nom_espace}'}&quot; est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) et/ou poster un message de bienvenue dans le salon privé.</li>
                         </ul>
                     </li>
                     <li><strong><span className="text-primary">P.A.N.D.A.</span> Stocke les Informations :</strong> <span className="text-primary">P.A.N.D.A.</span> enregistre l&apos;URL du webhook privé et l&apos;ID du salon privé dans sa base de données, associés à votre espace cloud.</li>
-                    <li><strong>Interaction via URL <span className="text-primary">P.A.N.D.A.</span> (Concept) :</strong> Votre espace cloud <span className="text-primary">P.A.N.D.A.</span> devient alors conceptuellement accessible ou interactive via une URL publique unique, par exemple : <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/?webhook=URL_DU_WEBHOOK_PRIVÉ_STOCKÉE_PAR_PANDA</code>. Lorsque vous (ou un service PANDA) envoyez des données (fichiers, commandes, etc.) à cette URL <span className="text-primary">P.A.N.D.A.</span>, PANDA utilisera le webhook privé stocké pour transmettre ces données à votre salon Discord dédié.</li>
+                    <li><strong>Interaction via URL <span className="text-primary">P.A.N.D.A.</span> :</strong> Votre espace cloud <span className="text-primary">P.A.N.D.A.</span> devient alors interactive via l&apos;URL publique unique : <code className="bg-muted px-1 rounded text-xs">{PANDA_CLOUD_APP_BASE_URL}/?webhook=URL_DU_WEBHOOK_PRIVÉ_STOCKÉE_PAR_PANDA</code>. Lorsque vous (ou un service PANDA) envoyez des données (fichiers, commandes, etc.) à cette URL <span className="text-primary">P.A.N.D.A.</span>, PANDA utilisera le webhook privé stocké pour transmettre ces données à votre salon Discord dédié.</li>
                 </ol>
-                <p className="mt-2 text-xs text-muted-foreground">Les identifiants de votre bot Discord (token, ID du salon général d&apos;écoute, ID du rôle admin pour les permissions) sont gérés par votre bot dans son propre environnement (ex: fichier <code className="bg-muted px-1 rounded text-xs">.env</code> du bot, potentiellement un <code className="bg-muted px-1 rounded text-xs">.env.cloud</code>). PANDA utilise uniquement le webhook général que vous lui avez fourni dans ses variables d&apos;environnement.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Les identifiants de votre bot Discord (token, ID du salon général d&apos;écoute, ID du rôle admin pour les permissions) sont gérés par votre bot dans son propre environnement (ex: fichier <code className="bg-muted px-1 rounded text-xs">.env</code> du bot). PANDA utilise uniquement le webhook général que vous lui avez fourni dans ses variables d&apos;environnement.</p>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -262,5 +296,3 @@ export default function CloudDashboardPage() {
   );
 }
     
-
-
