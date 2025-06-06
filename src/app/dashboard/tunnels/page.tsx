@@ -115,20 +115,21 @@ export default function TunnelsDashboardPage() {
         <Waypoints className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas de Tunnels</AlertTitle>
         <AlertDescription>
-          <span className="block">Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
-          {userQuotaConfig.maxTunnels === Infinity ? (
-            <span className="inline-flex items-center gap-1">
-              <InfinityIcon className="h-4 w-4 text-green-600" /> 
-              <span>tunnels illimités.</span>
-            </span>
-          ) : (
-            <span>
-              <strong className="text-primary">{services.length}</strong> sur <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong> tunnel(s) utilisé(s).
-            </span>
-          )}
+          <span className="block">
+            Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+            {userQuotaConfig.maxTunnels === Infinity ? (
+              <span className="inline-flex items-center gap-1">
+                <InfinityIcon className="h-4 w-4 text-green-600" /> 
+                <span>tunnels illimités.</span>
+              </span>
+            ) : (
+              <span>
+                <strong className="text-primary">{services.length}</strong> sur <strong className="text-primary">{userQuotaConfig.maxTunnels}</strong> tunnel(s) utilisé(s).
+              </span>
+            )}
           </span>
           {!canCreateMoreTunnels && userQuotaConfig.maxTunnels !== Infinity && (
-            <span className="text-destructive font-medium ml-1">Vous avez atteint votre limite.</span>
+            <span className="block text-destructive font-medium mt-1">Vous avez atteint votre limite.</span>
           )}
         </AlertDescription>
       </Alert>
@@ -228,9 +229,10 @@ export default function TunnelsDashboardPage() {
         </div>
       )}
       <p className="text-center text-xs text-muted-foreground mt-10 italic">
-        <span className="text-primary">P</span>roxying <span className="text-primary">A</span>nd <span className="text-primary">N</span>etwork <span className="text-primary">D</span>irect <span className="text-primary">A</span>ccess
+        <span className="text-primary">P</span>roxying <span className="text-primary">A</span>nd <span className="text-primary">N</span>etworked <span className="text-primary">D</span>irect <span className="text-primary">A</span>ccess
       </p>
     </div>
   );
 }
     
+

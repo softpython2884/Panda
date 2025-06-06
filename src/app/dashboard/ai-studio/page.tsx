@@ -54,17 +54,18 @@ export default function AiStudioPage() {
         <Gauge className="h-5 w-5" />
         <AlertTitle>Vos Quotas d'Appels API AI</AlertTitle>
         <AlertDescription>
-            <span className="block">Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
-            {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
-                <span className="inline-flex items-center gap-1">
-                    <InfinityIcon className="h-4 w-4 text-green-600" /> 
-                    <span>appels API AI illimités / jour.</span>
-                </span>
-            ) : (
-                <span>
-                    <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong> appels API AI / jour.
-                </span>
-            )}
+            <span className="block">
+              Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+              {userQuotaConfig.maxApiAICallsPerDay === Infinity ? (
+                  <span className="inline-flex items-center gap-1">
+                      <InfinityIcon className="h-4 w-4 text-green-600" /> 
+                      <span>appels API AI illimités / jour.</span>
+                  </span>
+              ) : (
+                  <span>
+                      <strong className="text-primary">{userQuotaConfig.maxApiAICallsPerDay}</strong> appels API AI / jour.
+                  </span>
+              )}
             </span>
            <span className="block mt-1">(Quota non encore actif)</span>
         </AlertDescription>
@@ -83,3 +84,4 @@ export default function AiStudioPage() {
     
 
     
+

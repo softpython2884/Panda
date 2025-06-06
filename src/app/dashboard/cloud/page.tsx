@@ -108,21 +108,22 @@ export default function CloudDashboardPage() {
         <Server className="h-5 w-5" />
         <AlertTitle className="font-semibold">Vos Quotas d'Espaces Cloud</AlertTitle>
         <AlertDescription>
-            <span className="block">Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
-            {userQuotaConfig.maxCloudServers === Infinity ? (
-                 <span className="inline-flex items-center gap-1">
-                    <InfinityIcon className="h-4 w-4 text-green-600" /> 
-                    <span>espaces cloud illimités.</span>
-                </span>
-            ) : (
-                <span>
-                    <strong className="text-primary">{cloudSpaces.length}</strong> sur <strong className="text-primary">{userQuotaConfig.maxCloudServers}</strong> espace(s) cloud utilisé(s).
-                </span>
-            )}
+            <span className="block">
+              Votre grade ({UserRoleDisplayConfig[userRole].label}) vous donne droit à :&nbsp;
+              {userQuotaConfig.maxCloudServers === Infinity ? (
+                   <span className="inline-flex items-center gap-1">
+                      <InfinityIcon className="h-4 w-4 text-green-600" /> 
+                      <span>espaces cloud illimités.</span>
+                  </span>
+              ) : (
+                  <span>
+                      <strong className="text-primary">{cloudSpaces.length}</strong> sur <strong className="text-primary">{userQuotaConfig.maxCloudServers}</strong> espace(s) cloud utilisé(s).
+                  </span>
+              )}
             </span>
             <span className="block mt-1">Chaque espace cloud dispose d'un stockage illimité (conceptuel).</span>
             {!canCreateMore && userQuotaConfig.maxCloudServers !== Infinity && (
-              <span className="text-destructive font-medium ml-1">Vous avez atteint votre limite.</span>
+              <span className="block text-destructive font-medium mt-1">Vous avez atteint votre limite.</span>
             )}
         </AlertDescription>
       </Alert>
@@ -222,8 +223,8 @@ export default function CloudDashboardPage() {
 
       <Card className="w-full mt-8 shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline">Intégration Cloud PANDA & Bot Discord</CardTitle>
-          <CardDescription>Flux de fonctionnement détaillé de l'interaction entre PANDA et votre bot Discord.</CardDescription>
+          <CardTitle className="font-headline">Concept d&apos;Intégration Cloud <span className="text-primary">P.A.N.D.A.</span> & Bot Discord</CardTitle>
+          <CardDescription>Flux de fonctionnement détaillé de l&apos;interaction entre PANDA et votre bot Discord.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-left">
           <div className="flex justify-center items-center gap-4">
@@ -232,23 +233,23 @@ export default function CloudDashboardPage() {
             <LinkIconJs className="h-12 w-12 text-green-500" />
           </div>
           <Alert>
-            <AlertTitle className="font-semibold">Flux d'Intégration :</AlertTitle>
+            <AlertTitle className="font-semibold">Flux d&apos;Intégration :</AlertTitle>
             <AlertDescription>
                 <ol className="list-decimal pl-5 space-y-2 mt-2">
-                    <li><strong>Initiation par l'Utilisateur PANDA :</strong> Vous créez un "Espace Cloud" via cette interface PANDA en fournissant un nom.</li>
-                    <li><strong>PANDA Notifie le Webhook Général :</strong> L'application PANDA envoie un message formaté (contenant le nom de l'espace, votre nom d'utilisateur PANDA, l'ID utilisateur PANDA, et un ID unique pour l'espace cloud) au webhook général Discord configuré (ex: <code className="bg-muted px-1 rounded text-xs">https://discord.com/api/webhooks/1380580290212397147/...</code>).</li>
-                    <li><strong>Action du Bot Discord PANDA :</strong> Votre bot Discord (hébergé séparément, par exemple dans un dossier <code className="bg-muted px-1 rounded text-xs">discordbot</code> sur vos serveurs, utilisant son token <code className="bg-muted px-1 rounded text-xs">MTM4M...</code> et l'ID du serveur Discord <code className="bg-muted px-1 rounded text-xs">1380...</code>) écoute les messages sur ce webhook général.
+                    <li><strong>Initiation par l&apos;Utilisateur <span className="text-primary">P.A.N.D.A.</span> :</strong> Vous créez un &quot;Espace Cloud&quot; via cette interface PANDA en fournissant un nom.</li>
+                    <li><strong><span className="text-primary">P.A.N.D.A.</span> Notifie le Webhook Général Discord :</strong> L&apos;application <span className="text-primary">P.A.N.D.A.</span> envoie un message formaté (contenant le nom de l&apos;espace, votre nom d&apos;utilisateur <span className="text-primary">P.A.N.D.A.</span>, l&apos;ID utilisateur <span className="text-primary">P.A.N.D.A.</span>, et un ID unique pour l&apos;espace cloud) au webhook général Discord que vous avez configuré dans PANDA (ex: <code className="bg-muted px-1 rounded text-xs">https://discord.com/api/webhooks/1380580290212397147/...</code> via la variable d&apos;environnement <code className="bg-muted px-1 rounded text-xs">DISCORD_GENERAL_WEBHOOK_URL</code>).</li>
+                    <li><strong>Action du Bot Discord <span className="text-primary">P.A.N.D.A.</span> :</strong> Votre bot Discord (hébergé séparément, par exemple dans un dossier <code className="bg-muted px-1 rounded text-xs">discordbot</code> sur vos serveurs, utilisant son token <code className="bg-muted px-1 rounded text-xs">MTM4M...</code> et l&apos;ID du serveur Discord <code className="bg-muted px-1 rounded text-xs">1380...</code>) écoute les messages arrivant sur ce webhook général.
                         <ul className="list-disc pl-5 space-y-1 mt-1">
                            <li>Quand il détecte le message de PANDA, il crée un nouveau salon textuel privé sur votre serveur Discord (ex: <code className="bg-muted px-1 rounded text-xs">#cloud-votreNomPanda-idCourt</code>).</li>
                            <li>Il génère un webhook Discord unique pour ce nouveau salon privé.</li>
-                           <li>**Crucial :** Le bot appelle ensuite une API PANDA sécurisée (`PUT /api/pod/cloud/[ID_ESPACE_CLOUD_PANDA]/discord-integration`) pour transmettre à PANDA l'URL de ce webhook privé et l'ID du salon privé.</li>
-                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud "{'{nom_espace}'}" est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) ou poster un message de bienvenue dans le salon privé.</li>
+                           <li>**Crucial :** Le bot appelle ensuite une API <span className="text-primary">P.A.N.D.A.</span> sécurisée (<code className="bg-muted px-1 rounded text-xs">PUT /api/pod/cloud/[ID_ESPACE_CLOUD_PANDA]/discord-integration</code>) pour transmettre à <span className="text-primary">P.A.N.D.A.</span> l&apos;URL de ce webhook privé et l&apos;ID du salon privé.</li>
+                           <li>Le bot peut vous notifier dans le salon général (ex: <code className="bg-muted px-1 rounded text-xs">@VotreNomDiscord, votre espace cloud &quot;{'{nom_espace}'}&quot; est prêt! Salon: #..., Webhook privé (pour PANDA): https://...</code>) ou poster un message de bienvenue dans le salon privé.</li>
                         </ul>
                     </li>
-                    <li><strong>PANDA Stocke les Informations :</strong> PANDA enregistre l'URL du webhook privé et l'ID du salon privé dans sa base de données, associés à votre espace cloud.</li>
-                    <li><strong>Interaction via URL PANDA (Concept) :</strong> Votre espace cloud PANDA devient alors conceptuellement accessible ou interactive via une URL publique unique, par exemple : <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/?webhook=URL_DU_WEBHOOK_PRIVÉ_STOCKÉE_PAR_PANDA</code>. Lorsque vous (ou un service PANDA) envoyez des données (fichiers, commandes, etc.) à cette URL PANDA, PANDA utilisera le webhook privé stocké pour transmettre ces données à votre salon Discord dédié.</li>
+                    <li><strong><span className="text-primary">P.A.N.D.A.</span> Stocke les Informations :</strong> <span className="text-primary">P.A.N.D.A.</span> enregistre l&apos;URL du webhook privé et l&apos;ID du salon privé dans sa base de données, associés à votre espace cloud.</li>
+                    <li><strong>Interaction via URL <span className="text-primary">P.A.N.D.A.</span> (Concept) :</strong> Votre espace cloud <span className="text-primary">P.A.N.D.A.</span> devient alors conceptuellement accessible ou interactive via une URL publique unique, par exemple : <code className="bg-muted px-1 rounded text-xs">https://cloud.panda.nationquest.fr/?webhook=URL_DU_WEBHOOK_PRIVÉ_STOCKÉE_PAR_PANDA</code>. Lorsque vous (ou un service PANDA) envoyez des données (fichiers, commandes, etc.) à cette URL <span className="text-primary">P.A.N.D.A.</span>, PANDA utilisera le webhook privé stocké pour transmettre ces données à votre salon Discord dédié.</li>
                 </ol>
-                <p className="mt-2 text-xs text-muted-foreground">Les identifiants de votre bot Discord (token, ID du salon général d'écoute, ID du rôle admin pour les permissions) sont gérés par votre bot dans son propre environnement (ex: fichier <code className="bg-muted px-1 rounded text-xs">.env</code> du bot). PANDA utilise uniquement le webhook général que vous lui avez fourni dans ses variables d'environnement (ex: <code className="bg-muted px-1 rounded text-xs">.env.local</code> pour PANDA).</p>
+                <p className="mt-2 text-xs text-muted-foreground">Les identifiants de votre bot Discord (token, ID du salon général d&apos;écoute, ID du rôle admin pour les permissions) sont gérés par votre bot dans son propre environnement (ex: fichier <code className="bg-muted px-1 rounded text-xs">.env</code> du bot, potentiellement un <code className="bg-muted px-1 rounded text-xs">.env.cloud</code>). PANDA utilise uniquement le webhook général que vous lui avez fourni dans ses variables d&apos;environnement.</p>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -261,4 +262,5 @@ export default function CloudDashboardPage() {
   );
 }
     
+
 
