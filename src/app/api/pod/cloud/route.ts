@@ -6,6 +6,8 @@ import { CloudSpaceCreateSchema, RolesConfig, DISCORD_GENERAL_WEBHOOK_URL } from
 import { ZodError } from 'zod';
 import { createUserNotification } from '@/lib/notificationsHelper';
 
+export const dynamic = 'force-dynamic'; // Ensure fresh data
+
 // GET user's cloud spaces
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const cloudSpaces = db.prepare(
-      'SELECT id, name, discord_webhook_url, discord_channel_id, created_at FROM cloud_spaces WHERE user_id = ? ORDER BY created_at DESC'
+      "SELECT id, name, discord_webhook_url, discord_channel_id, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as createdAt FROM cloud_spaces WHERE user_id = ? ORDER BY created_at DESC"
     ).all(userId);
     return NextResponse.json({ cloudSpaces });
   } catch (error) {
@@ -72,7 +74,6 @@ export async function POST(request: NextRequest) {
     
     const { name } = validationResult.data;
     
-    // discord_webhook_url and discord_channel_id will be updated later by the bot
     const initialDiscordWebhookUrl = null; 
     const initialDiscordChannelId = null;
 
@@ -83,7 +84,12 @@ export async function POST(request: NextRequest) {
        VALUES (?, ?, ?, ?, ?, datetime('now'))`
     ).run(spaceId, userId, name, initialDiscordWebhookUrl, initialDiscordChannelId);
 
-    const newSpace = db.prepare('SELECT * FROM cloud_spaces WHERE id = ?').get(spaceId);
+    const newSpaceRaw = db.prepare("SELECT id, name, discord_webhook_url, discord_channel_id, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as createdAt FROM cloud_spaces WHERE id = ?").get(spaceId);
+    const newSpace = {
+        ...newSpaceRaw,
+        createdAt: (newSpaceRaw as any).createdAt // Already formatted by strftime
+    };
+
 
     if (userId) {
         await createUserNotification({
@@ -94,18 +100,18 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    if (DISCORD_GENERAL_WEBHOOK_URL) {
+    if (DISCORD_GENERAL_WEBHOOK_URL && userId && userPandaUsername) {
       try {
         const discordPayload = {
           content: `Nouvelle demande de création d'Espace Cloud PANDA détectée. Bot, à toi de jouer !`,
           embeds: [{
-            title: "Requête de Création d'Espace Cloud PANDA", // Title your bot expects
+            title: "Requête de Création d'Espace Cloud PANDA",
             color: 0x38b26c, 
             fields: [
               { name: "Nom de l'espace", value: name, inline: true },
-              { name: "Utilisateur PANDA", value: userPandaUsername || 'N/A', inline: true },
-              { name: "ID Utilisateur PANDA", value: `\`${userId}\``, inline: false }, // Bot expects raw ID string
-              { name: "ID Espace Cloud PANDA", value: `\`${spaceId}\``, inline: false }, // Bot expects raw ID string
+              { name: "Utilisateur PANDA", value: userPandaUsername, inline: true },
+              { name: "ID Utilisateur PANDA", value: userId, inline: false }, 
+              { name: "ID Espace Cloud PANDA", value: spaceId, inline: false }, 
             ],
             footer: { text: "PANDA Ecosystem - Cloud Space Creation Request" },
             timestamp: new Date().toISOString(),
@@ -130,7 +136,7 @@ export async function POST(request: NextRequest) {
         console.error('Error preparing or sending initial Discord notification:', discordError);
       }
     } else {
-        console.warn("DISCORD_GENERAL_WEBHOOK_URL is not set. Skipping initial Discord notification for new cloud space.");
+        console.warn("DISCORD_GENERAL_WEBHOOK_URL is not set, or user details missing. Skipping initial Discord notification for new cloud space.");
     }
 
     return NextResponse.json({ message: 'Cloud space creation initiated. Discord bot will process the integration.', cloudSpace: newSpace }, { status: 201 });

@@ -7,6 +7,8 @@ import { ZodError } from 'zod';
 const POD_API_URL = process.env.POD_API_URL || 'http://localhost:9002';
 const AUTH_COOKIE_NAME = 'panda_session_token';
 
+export const dynamic = 'force-dynamic'; // Ensure fresh data
+
 async function getSessionToken(request: NextRequest): Promise<string | null> {
   const cookie = request.cookies.get(AUTH_COOKIE_NAME);
   return cookie?.value || null;
@@ -31,6 +33,8 @@ export async function GET(request: NextRequest) {
         'Authorization': `Bearer ${sessionToken}`,
         'Content-Type': 'application/json',
       },
+      // Add cache-busting for the fetch call itself if necessary, though force-dynamic on pod route should help
+      cache: 'no-store', 
     });
 
     const podData = await podResponse.json();
